@@ -13,7 +13,11 @@ Download and prepare the data
 ./get_data.sh
 ```
 
+### Split queries in never, rarely, and oftern mutable
 
+```
+python -m utils.split_mutable
+```
 
 
 ### Inference
