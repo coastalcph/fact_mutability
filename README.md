@@ -9,7 +9,7 @@ pip install torch==2.0.0
 pip install git+https://github.com/huggingface/transformers
 ```
 
-If using hendrix:
+If you want to use Alpaca models on hendrix:
 ```
 pip uninstall tokenizers
 pip install tokenizers>=0.13.3
