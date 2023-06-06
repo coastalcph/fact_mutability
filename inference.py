@@ -10,7 +10,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def inference(dataset, tokenizer, model):
     config = GenerationConfig(
-            max_new_tokens=5,
+            max_new_tokens=10,
             do_sample=False,
             output_hidden_states=True,
             output_scores=True,
