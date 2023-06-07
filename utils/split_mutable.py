@@ -3,31 +3,36 @@ import json
 
 from mutability.domain import Queries, Query, Answer
 
-def plot_ratios(ratios):
-    plt.hist(ratios)
-    plt.show()
 
 def build_dataset(data_path):
-    queries = defaultdict(list)
+    queries = dict()
     queries_obj = Queries()
     for line in open(data_path):
         data = json.loads(line)
+        query_id = "_".join(data['id'].split("_")[:2])
         query = data['query']
-        answer = data['answer'][0]['name']
         year = data['date']
-        queries[query].append((answer, year))
+        if query_id not in queries:
+            queries[query_id] = {
+                "query": query,
+                "answers": list()
+            }
+        for answer in data['answer']:
+            queries[query_id]['answers'].append((answer['name'], year))
     
-    for query, answers in queries.items():
+    for query_id, data in queries.items():
+        query = data['query']
+        answers = data['answers']
         answers_obj = [Answer(a, y) for a, y in answers]
-        query_obj = Query(query, answers_obj)
+        query_obj = Query(query_id, query, answers_obj)
         queries_obj.add_query(query_obj)
     
     return queries_obj
 
 
 def main():
-    for split in ['train', 'val', 'test']:
-        dataset = build_dataset('data/{}.json'.format(split))
+    for split in ['train', 'val']:
+        dataset = build_dataset('data/{}_with_aliases.json'.format(split))
         
         # compute changes
         ratios = list()
@@ -38,13 +43,16 @@ def main():
         }
         for query in dataset:
             ratio = query.get_ratio()
-            if ratio < 0.1:
+            if ratio < 0.05:
                 mutables['never'].append(query.dump())
-            elif ratio < 0.5:
+            elif ratio < 0.4:
                 mutables['rarely'].append(query.dump())
-            elif ratio >= 0.5:
+            elif ratio >= 0.4:
                 mutables['often'].append(query.dump())
             ratios.append(ratio)
+        print("Never", len(mutables['never']))
+        print("Rarely", len(mutables['rarely']))
+        print("Often", len(mutables['often']))
         json.dump(mutables, open(f"./data/mutable_{split}.json", "w"), indent=True)
         dataset.plot_ratios()
 
