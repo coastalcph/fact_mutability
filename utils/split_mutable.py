@@ -43,11 +43,11 @@ def main():
         }
         for query in dataset:
             ratio = query.get_ratio()
-            if ratio < 0.05:
+            if ratio < 0.1:
                 mutables['never'].append(query.dump())
-            elif ratio < 0.4:
+            elif ratio < 0.5:
                 mutables['rarely'].append(query.dump())
-            elif ratio >= 0.4:
+            elif ratio >= 0.5:
                 mutables['often'].append(query.dump())
             ratios.append(ratio)
         print("Never", len(mutables['never']))
