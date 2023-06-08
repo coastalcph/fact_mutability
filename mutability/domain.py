@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 class Answer:
     def __init__(self, texts: List[str], year: int):
-        self.texts = texts
+        self.texts = sorted(texts)
         self.year = year
 
     def __repr__(self):
@@ -32,17 +32,18 @@ class Query:
         return t
 
     def __compute_ratio(self):
-        # TODO: Better capture mutability over years by keeping track of answers
-        unique_names = set()
         years = set()
         answers = self.group_answers_by_year()
-        max_answers_a_year = max([len(a) for _, a in answers.items()])
-        min_answers_a_year = min([len(a) for _, a in answers.items()])
+        current_answer = set()
+        changes = 0
         for year, answers_a_year in answers.items():
-            for answer in answers_a_year:
-                unique_names.add(answer.texts[0])
             years.add(year)
-        ratio = (len(unique_names) - (max_answers_a_year - min_answers_a_year)) / len(years)
+            new_answer = {a.texts[0] for a in answers_a_year}
+            if len(current_answer):  # check if the answer changed
+                if new_answer != current_answer:  # something changed
+                    changes += 1 
+            current_answer = new_answer
+        ratio = changes / len(years)
         return ratio
     
     def group_answers_by_year(self):

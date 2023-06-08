@@ -43,7 +43,7 @@ def main():
         }
         for query in dataset:
             ratio = query.get_ratio()
-            if ratio < 0.1:
+            if ratio < 0.2:
                 mutables['never'].append(query.dump())
             elif ratio < 0.5:
                 mutables['rarely'].append(query.dump())
