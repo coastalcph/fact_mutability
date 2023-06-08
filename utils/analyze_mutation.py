@@ -3,6 +3,7 @@ import json
 
 import numpy as np
 from scipy.stats import pearsonr
+import matplotlib.pyplot as plt
 
 from mutability.domain import Queries, Query, Answer
 
@@ -68,11 +69,11 @@ def main():
                 mutables['never']['ratios'].append(ratio)
                 mutables['never']['confidences'].append(confidence)
                 mutables['never']['average'].append(np.mean(confidences))
-            elif ratio < 0.6:
+            elif ratio < 0.5:
                 mutables['rarely']['ratios'].append(ratio)
                 mutables['rarely']['confidences'].append(confidence)
                 mutables['rarely']['average'].append(np.mean(confidences))
-            elif ratio >= 0.6:
+            elif ratio >= 0.5:
                 mutables['often']['ratios'].append(ratio)
                 mutables['often']['confidences'].append(confidence)
                 mutables['often']['average'].append(np.mean(confidences))
@@ -92,6 +93,10 @@ def main():
             print("Min", np.min(confidences))
         corr = pearsonr(all_confidences, all_ratios)
         print("Correlation", corr)
+        plt.scatter(all_ratios, all_confidences)
+        plt.ylabel("Confidence")
+        plt.xlabel("Mutation rate")
+        plt.show()
 
 
 if __name__ == '__main__':

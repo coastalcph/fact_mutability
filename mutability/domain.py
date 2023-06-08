@@ -43,7 +43,7 @@ class Query:
                 if new_answer != current_answer:  # something changed
                     changes += 1 
             current_answer = new_answer
-        ratio = changes / len(years)
+        ratio = (changes) / len(years)
         return ratio
     
     def group_answers_by_year(self):
