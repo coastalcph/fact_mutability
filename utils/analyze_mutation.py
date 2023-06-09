@@ -5,52 +5,12 @@ import numpy as np
 from scipy.stats import pearsonr
 import matplotlib.pyplot as plt
 
-from mutability.domain import Queries, Query, Answer
-
-
-def build_dataset(data_path):
-    queries = dict()
-    queries_obj = Queries()
-    for line in open(data_path):
-        data = json.loads(line)
-        query_id = "_".join(data['id'].split("_")[:2])
-        query = data['query']
-        year = data['date']
-        if query_id not in queries:
-            queries[query_id] = {
-                "query": query,
-                "answers": list()
-            }
-        for answer in data['answer']:
-            queries[query_id]['answers'].append((answer['name'], year))
-    
-    for query_id, data in queries.items():
-        query = data['query']
-        answers = data['answers']
-        answers_obj = [Answer(a, y) for a, y in answers]
-        query_obj = Query(query_id, query, answers_obj)
-        queries_obj.add_query(query_obj)
-    
-    return queries_obj
-
-
-def load_predictions():
-    predictions = list()
-    with open('./data/predictions.json') as fhandle:
-        for line in fhandle:
-            data = json.loads(line)
-            predictions.append(data)
-    return predictions
-
-def get_prediction(predictions, qcode):
-    for prediction in predictions:
-        if qcode == prediction['qcode']:
-            return prediction
+from data_handling import *
 
 def main():
     for split in ['val']:
         dataset = build_dataset('data/{}_with_aliases.json'.format(split))
-        predictions = load_predictions()
+        predictions = load_predictions('data/predictions.json')
 
         # compute changes
         ratios = list()

@@ -4,9 +4,10 @@ from typing import List, Optional, Dict
 import matplotlib.pyplot as plt
 
 class Answer:
-    def __init__(self, texts: List[str], year: int):
+    def __init__(self, texts: List[str], year: int, qcode: str):
         self.texts = sorted(texts)
         self.year = year
+        self.qcode = qcode
 
     def __repr__(self):
         texts = '\n'.join(self.texts)
@@ -15,7 +16,8 @@ class Answer:
     def dump(self) -> dict:
         return {
             "text": self.texts,
-            "year": self.year
+            "year": self.year,
+            "qcode": self.qcode
         }
 
 
