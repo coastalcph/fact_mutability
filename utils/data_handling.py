@@ -36,13 +36,17 @@ def load_predictions(data_path):
             qcode = data['qcode']
             del data['qcode']
             predictions[qcode] = data
+    
     return predictions
 
 def get_prediction(predictions, qcode, mode=None):
+    if qcode not in predictions:
+        return None
+
     if mode is None:
         return predictions[qcode]
     elif mode == 'perplexity':
-        return sorted(predictions[qcode]['predictions'], key=lambda x: x['perplexity'])[0]['answer']
+        return sorted(predictions[qcode]['predictions'], key=lambda x: x['perplexity'])[0]
     elif mode == 'first_token_probability':
-        return sorted(predictions[qcode]['predictions'], key=lambda x: x['first_token_probability'])[-1]['answer']
+        return sorted(predictions[qcode]['predictions'], key=lambda x: x['first_token_probability'])[-1]
 

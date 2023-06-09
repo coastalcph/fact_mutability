@@ -69,7 +69,11 @@ class Query:
                 return a.texts
 
     def get_answer_by_year(self, year):
-        return sum([a.texts for a in self.group_answers_by_year().get(year, None)], [])
+        answers_for_year = self.group_answers_by_year().get(year, None)
+        if answers_for_year is None:
+            return None
+        else:
+            return sum([a.texts for a in answers_for_year], [])
 
     def get_relevant_target(self, target_mode):
         if target_mode == 'most_recent':
