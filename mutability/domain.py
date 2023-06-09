@@ -76,7 +76,7 @@ class Queries:
             yield each
     
     def __getitem__(self, id: str):
-        if query in self.queries:
+        if id in self.queries:
             return self.queries[id]
         else:
             raise IndexError(f'Query "{id}" does not exists in dataset')
