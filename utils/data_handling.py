@@ -28,15 +28,21 @@ def build_dataset(data_path):
     return queries_obj
 
 
-def load_predictions(data_path='./data/predictions.json'):
-    predictions = list()
+def load_predictions(data_path):
+    predictions = {}
     with open(data_path) as fhandle:
         for line in fhandle:
             data = json.loads(line)
-            predictions.append(data)
+            qcode = data['qcode']
+            del data['qcode']
+            predictions[qcode] = data
     return predictions
 
-def get_prediction(predictions, qcode):
-    for prediction in predictions:
-        if qcode == prediction['qcode']:
-            return prediction
+def get_prediction(predictions, qcode, mode=None):
+    if mode is None:
+        return predictions[qcode]
+    elif mode == 'perplexity':
+        return sorted(predictions[qcode]['predictions'], key=lambda x: x['perplexity'])[0]['answer']
+    elif mode == 'first_token_probability':
+        return sorted(predictions[qcode]['predictions'], key=lambda x: x['first_token_probability'])[-1]['answer']
+

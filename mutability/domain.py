@@ -47,7 +47,7 @@ class Query:
             current_answer = new_answer
         ratio = (changes) / len(years)
         return ratio
-    
+
     def group_answers_by_year(self):
         answers_by_year = defaultdict(list)
         for answer in self.answers:
@@ -56,6 +56,28 @@ class Query:
 
     def get_ratio(self) -> float:
         return self.ratio
+
+    def get_most_recent_answer(self):
+        answers_by_year = self.group_answers_by_year()
+        return sum([a.texts for a in answers_by_year[sorted(list(answers_by_year.keys()))[-1]]], [])
+
+    def get_most_frequent_answer(self):
+        qcodes = [a.qcode for a in self.answers]
+        most_frequent_qcode = max(set(qcodes), key=qcodes.count)
+        for a in sorted(self.answers, key=lambda x: x.year)[::-1]:
+            if a.qcode == most_frequent_qcode:
+                return a.texts
+
+    def get_answer_by_year(self, year):
+        return sum([a.texts for a in self.group_answers_by_year().get(year, None)], [])
+
+    def get_relevant_target(self, target_mode):
+        if target_mode == 'most_recent':
+            return self.get_most_recent_answer()
+        elif target_mode == 'most_frequent':
+            return self.get_most_frequent_answer()
+        elif target_mode.isnumeric():
+            return self.get_answer_by_year(target_mode)
 
     def dump(self) -> dict:
         return {
