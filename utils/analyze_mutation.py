@@ -40,7 +40,9 @@ def main():
         for query in dataset:
             ratio = query.get_ratio()
             relation = relations[query.relation_id]
-            ratio += relation.sample_mutation_rate()
+            relation_ratio = relation.sample_mutation_rate()
+            print(relation_ratio)
+            ratio += relation_ratio
             prediction = get_prediction(predictions, query.id)
             confidences = sorted([p['first_token_probability'] for p in prediction['predictions']], reverse=True)
             confidences = [c for c in confidences if not np.isnan(c)]

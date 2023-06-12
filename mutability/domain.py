@@ -11,7 +11,7 @@ class Relation:
         self.mutation_std = mutation_std
     
     def sample_mutation_rate(self) -> float:
-        return min(0, np.random.gamma(self.mutation_mean, self.mutation_std, 1)[0])
+        return max(0, np.random.normal(self.mutation_mean, self.mutation_std, 1)[0])
 
 
 class Answer:
