@@ -5,12 +5,30 @@ import numpy as np
 from scipy.stats import pearsonr
 import matplotlib.pyplot as plt
 
-from data_handling import *
+from mutability.domain import Relation
+from utils.data_handling import *
+
+def build_relations(dataset):
+    relations_mutations = defaultdict(list)
+    for query in dataset:
+        relations_mutations[query.relation_id].append(query.get_ratio())
+    relations = dict()
+    for relation, mutations in relations_mutations.items():
+        mean = np.mean(mutations)
+        std = np.std(mutations)
+        relation_obj = Relation(relation, mean, std) 
+        relations[relation] = relation_obj
+    return relations
+
 
 def main():
     for split in ['val']:
         dataset = build_dataset('data/{}_with_aliases.json'.format(split))
         predictions = load_predictions('data/predictions.json')
+
+        relations = build_relations(dataset)
+        for relation_id, relation in relations.items():
+            print(relation_id, relation.mutation_mean, relation.mutation_std)
 
         # compute changes
         ratios = list()
@@ -21,8 +39,12 @@ def main():
         }
         for query in dataset:
             ratio = query.get_ratio()
+            relation = relations[query.relation_id]
+            relation_ratio = relation.sample_mutation_rate()
+            print(relation_ratio)
+            ratio += relation_ratio
             prediction = get_prediction(predictions, query.id)
-            confidences = sorted([p['token_scores'][1] if p['answer'].lower().startswith("the ") else p['token_scores'][0]  for p in prediction['predictions'] if len(p['token_scores'])], reverse=True)
+            confidences = sorted([p['first_token_probability'] for p in prediction['predictions']], reverse=True)
             confidences = [c for c in confidences if not np.isnan(c)]
             confidence = confidences[0]
             if ratio < 0.2:

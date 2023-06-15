@@ -1,7 +1,18 @@
 from collections import defaultdict
 from typing import List, Optional, Dict
 
+import numpy as np
 import matplotlib.pyplot as plt
+
+class Relation:
+    def __init__(self, id, mutation_mean, mutation_std) -> None:
+        self.id = id
+        self.mutation_mean = mutation_mean
+        self.mutation_std = mutation_std
+    
+    def sample_mutation_rate(self) -> float:
+        return max(0, np.random.normal(self.mutation_mean, self.mutation_std, 1)[0])
+
 
 class Answer:
     def __init__(self, texts: List[str], year: int, qcode: str):
@@ -22,11 +33,12 @@ class Answer:
 
 
 class Query:
-    def __init__(self, id: str, text: str, answers: List[Answer]):
+    def __init__(self, id: str, text: str, answers: List[Answer], relation_id: str):
         self.id = id
         self.text = text
         self.answers = answers
         self.ratio = self.__compute_ratio()
+        self.relation_id = relation_id
 
     def __repr__(self):
         t = f"{self.text}\n"
