@@ -128,7 +128,8 @@ for prop in properties:
         data.append({'query': query,
                      'date': 2023,
                      'answer': answers,
-                     'id': '{}_{}_{}'.format(subj_item['qcode'], prop, '2023')})
+                     'id': '{}_{}_{}'.format(subj_item['qcode'], prop, '2023'),
+                     'relation': prop})
 
 with open('data/immutable.json', 'w') as f:
     f.write('\n'.join([json.dumps(line) for line in data]))
