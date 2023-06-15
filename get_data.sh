@@ -2,9 +2,9 @@ mkdir data
 cd data
 
 # original
-#wget https://storage.googleapis.com/gresearch/templama/train.json
-#wget https://storage.googleapis.com/gresearch/templama/val.json
-#wget https://storage.googleapis.com/gresearch/templama/test.json
+wget https://storage.googleapis.com/gresearch/templama/train.json
+wget https://storage.googleapis.com/gresearch/templama/val.json
+wget https://storage.googleapis.com/gresearch/templama/test.json
 
 # with aliases 
 wget https://huggingface.co/datasets/Yova/templama/resolve/main/train_with_aliases.json
