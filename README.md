@@ -38,8 +38,8 @@ python evaluation.py --predictions_path <PATH>
 
 | Model                   | Prediction mode |  F1  |
 | ----------------------  | --------------- | ---- |
-| huggyllama/llama-7b     | perplexity      |  |
-| huggyllama/llama-7b     | first token     |  |
+| huggyllama/llama-7b     | perplexity      | 12.8 |
+| huggyllama/llama-7b     | first token     | 12.3 |
 | chavinlo/alpaca-native  | perplexity      | 17.7 |
 | chavinlo/alpaca-native  | first token     | 15.6 |
 
@@ -47,7 +47,7 @@ python evaluation.py --predictions_path <PATH>
 
 | Model                   | Prediction mode |  F1  |
 | ----------------------  | --------------- | ---- |
-| huggyllama/llama-7b     | perplexity      |  |
-| huggyllama/llama-7b     | first token     |  |
+| huggyllama/llama-7b     | perplexity      | 14.9 |
+| huggyllama/llama-7b     | first token     | 14.4 |
 | chavinlo/alpaca-native  | perplexity      | 20.7 |
 | chavinlo/alpaca-native  | first token     | 18.8 |
