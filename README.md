@@ -21,8 +21,14 @@ python -m utils.split_mutable
 
 
 ### Inference
-This code passes a set of queries (the validation split of TempLama by default) through a language model and stores and model's hidden states and softmax scores in `outputs.json` and the model's predictions in `predictions.json`. Processing the validation data with a Llama-7B model takes up to 5 min on an A100 GPU.
+This code passes a set of queries (one query per line) through a language model and stores the model's predictions and softmax scores in `predictions.json`. If model name contains the string "alpaca" the query is placed inside a template (three options) with a user-specified instruction.
+Uses beam search (10) to generate predictions and stores all. 
 ```
 python inference.py -h
 ```
 
+### Evaluation
+SQUAD-style F1-score evaluation, where the user specifies whether to select the best prediction based on perplexity of first token score (`prediction_mode`)  and whether to evaluate against the most recent, most frequent, or year-specific answer (`target_mode`). If you pass `data/<SPLIT>.json` as `data_path`, it evaluates on the original templama answer only, and if you pass `data/<SPLIT>_with_aliases.json`, it evaluates with all aliases for the correct answer.
+```
+python evaluation.py --predictions_path <PATH>
+```
