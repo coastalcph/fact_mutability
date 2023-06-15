@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,8 +15,8 @@ class Relation:
 
 
 class Answer:
-    def __init__(self, texts: List[str], year: int, qcode: str):
-        self.texts = sorted(texts)
+    def __init__(self, texts: Union[str, List[str]], year: int, qcode: str):
+        self.texts = sorted(texts) if isinstance(texts, list) else [texts]
         self.year = year
         self.qcode = qcode
 

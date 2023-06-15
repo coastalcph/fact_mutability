@@ -38,7 +38,8 @@ def prepare_prompt(query, args):
     
 def get_scores(sequences, model, input_ids, prompt, query, tokenizer):
     
-    logits = model(sequences)['logits']
+    with torch.no_grad():
+        logits = model(sequences)['logits']
     # we only case about the scores of the actual answer so we have to trim the  sequences
     trimmed_sequences = []
     trimmed_logits = []
