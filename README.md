@@ -32,6 +32,11 @@ SQUAD-style F1-score evaluation, where the user specifies whether to select the 
 ```
 python evaluation.py --predictions_path <PATH>
 ```
+
+### Predictions
+[Here](https://huggingface.co/spaces/Yova/fm_predictions) (`qir` means query in response)
+
+
 ### Validation Results
 
 #### Without aliases (target_mode: most recent answer)
