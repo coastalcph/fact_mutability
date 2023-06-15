@@ -5,8 +5,6 @@ from utils.f1_score import compute_score
 
 from utils.data_handling import *
 
-# load data and predictions
-
 def evaluate(data, predictions, target_mode, prediction_mode):
     # compute F1 as max across any alias for any answer for the most recent, most frequent, or specific-year answer
     qa_targets, qa_predictions = [], []
@@ -17,7 +15,7 @@ def evaluate(data, predictions, target_mode, prediction_mode):
         if prediction is None: continue
         qa_targets.append({'answers': {'answer_start': [0]*len(target), 'text': target}, 'id': query.id})
         qa_predictions.append({'prediction_text': prediction['answer'], 'id': query.id})
-    
+        if query.ratio < 0.1: import pdb; pdb.set_trace()
     print('Evaluating on {} datapoints'.format(len(qa_targets)))
     return compute_score(predictions=qa_predictions, references=qa_targets)
 

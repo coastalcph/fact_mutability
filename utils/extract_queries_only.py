@@ -10,7 +10,7 @@ def format_query(query):
     else:
         print(query)
 
-for split in ['train', 'val', 'test']:
+for split in ['train', 'val', 'test', 'immutable']:
     queries = []
     seen_qcodes = []
     for line in open('data/{}.json'.format(split)):

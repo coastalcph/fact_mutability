@@ -56,12 +56,21 @@ def get_scores(sequences, model, input_ids, prompt, query, tokenizer):
         trimmed_sequences.append(sequence)
         trimmed_logits.append(l[offset - 1: offset - 1 + len(sequence)])
 
+    answers = [tokenizer.decode(ts) for ts in trimmed_sequences]
     distributions = [torch.softmax(l, 1) for l in trimmed_logits]
     token_scores = [[distribution[i][sequence[i]].item() for i in range(len(sequence))] 
                                               for distribution, sequence in zip(distributions, trimmed_sequences)]
-    overall_scores = [np.mean(np.log(ts)) for ts in token_scores]
+    first_token_score = []
+    for ts, answer in zip(token_scores, answers):
+        if not len(ts):
+            first_token_score.append(0)
+        elif answer.startswith('the') and len(ts) > 1:
+            first_token_score.append(ts[1])
+        else:
+            first_token_score.append(ts[0])
+    perplexity = [np.exp(-np.mean(np.log(ts))) for ts in token_scores]
 
-    return trimmed_sequences, token_scores, overall_scores
+    return answers, token_scores, first_token_score, perplexity
             
 def inference(dataset, tokenizer, model, args):
     config = GenerationConfig(
@@ -83,13 +92,17 @@ def inference(dataset, tokenizer, model, args):
             input_ids = tokenizer.encode(prompt, return_tensors='pt').to(device)
             model_output = model.generate(input_ids, generation_config=config)
         
-        answers, token_scores, overall_scores = get_scores(model_output['sequences'], model, input_ids, prompt, query, tokenizer)
-        outputs['raw_predictions'].append({"qcode": qcode, "query": query, "predictions": [{'output_ids': model_output['sequences'][i].cpu().tolist(),
-                                                                                            'answer': tokenizer.decode(model_output['sequences'][i])}
-                                                                                                                          for i in range(NUM_BEAMS)]})
-        outputs['predictions'].append({"qcode": qcode, "query": query, "predictions": [{'answer': tokenizer.decode(answers[i]),
-                                                                                              'token_scores': token_scores[i],
-                                                              'overall_score': overall_scores[i]} for i in range(NUM_BEAMS)]})
+        answers, token_scores, first_token_score, perplexity = get_scores(model_output['sequences'], model, input_ids, prompt, query, tokenizer)
+        outputs['raw_predictions'].append({"qcode": qcode, "query": query, 
+                                           "predictions": [{'output_ids': model_output['sequences'][i].cpu().tolist(),
+                                           "answer": tokenizer.decode(model_output['sequences'][i])}
+                                           for i in range(NUM_BEAMS)]})
+        outputs['predictions'].append({"qcode": qcode, "query": query, 
+                                       "predictions": [{'answer': answers[i],
+                                                        'per_token_probability': token_scores[i],
+                                                        'first_token_probability': first_token_score[i],
+                                                        'perplexity': perplexity[i]} 
+                                        for i in range(NUM_BEAMS)]})
     return outputs
 
 def main(args):
@@ -126,7 +139,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Inference')
     parser.add_argument("--queries_path", type=str, default='data/val.txt', help="Path to txt file, one query per line")
-    parser.add_argument("--template", type=str, default='query_in_instructions', help="query_in_instructions, query_in_response or query_in_input")
+    parser.add_argument("--template", type=str, default='query_in_response', help="query_in_instructions, query_in_response or query_in_input")
     parser.add_argument("--instruction", type=str, default="Complete the fact in as few words as possible")
     parser.add_argument("--output_dir", type=str, default='output', help="Dir where model outputs will be stored")
     parser.add_argument("--exp_name", type=str, default='debug', help="Experiment name")
