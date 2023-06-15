@@ -32,3 +32,22 @@ SQUAD-style F1-score evaluation, where the user specifies whether to select the 
 ```
 python evaluation.py --predictions_path <PATH>
 ```
+### Validation Results
+
+#### Without aliases (target_mode: most recent answer)
+
+| Model                   | Prediction mode |  F1  |
+| ----------------------  | --------------- | ---- |
+| huggyllama/llama-7b     | perplexity      |  |
+| huggyllama/llama-7b     | first token     |  |
+| chavinlo/alpaca-native  | perplexity      | 17.7 |
+| chavinlo/alpaca-native  | first token     | 15.6 |
+
+#### With aliases (target_mode: most recent answer)
+
+| Model                   | Prediction mode |  F1  |
+| ----------------------  | --------------- | ---- |
+| huggyllama/llama-7b     | perplexity      |  |
+| huggyllama/llama-7b     | first token     |  |
+| chavinlo/alpaca-native  | perplexity      | 20.7 |
+| chavinlo/alpaca-native  | first token     | 18.8 |
