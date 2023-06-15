@@ -32,6 +32,11 @@ SQUAD-style F1-score evaluation, where the user specifies whether to select the 
 ```
 python evaluation.py --predictions_path <PATH>
 ```
+
+### Predictions
+[Here](https://huggingface.co/spaces/Yova/fm_predictions) (`qir` means query in response)
+
+
 ### Validation Results
 
 #### Without aliases (target_mode: most recent answer)
@@ -51,3 +56,23 @@ python evaluation.py --predictions_path <PATH>
 | huggyllama/llama-7b     | first token     | 14.4 |
 | chavinlo/alpaca-native  | perplexity      | 20.7 |
 | chavinlo/alpaca-native  | first token     | 18.8 |
+
+### Immutable Results
+
+#### Without aliases 
+
+| Model                   | Prediction mode |  F1  |
+| ----------------------  | --------------- | ---- |
+| huggyllama/llama-7b     | perplexity      | 27.7 |
+| huggyllama/llama-7b     | first token     | 27.7 |
+| chavinlo/alpaca-native  | perplexity      | 53.5 |
+| chavinlo/alpaca-native  | first token     | 34.4 |
+
+#### With aliases 
+
+| Model                   | Prediction mode |  F1  |
+| ----------------------  | --------------- | ---- |
+| huggyllama/llama-7b     | perplexity      | 30.8 |
+| huggyllama/llama-7b     | first token     | 30.7 |
+| chavinlo/alpaca-native  | perplexity      | 56.6 |
+| chavinlo/alpaca-native  | first token     | 38.0 |
