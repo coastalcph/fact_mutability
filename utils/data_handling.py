@@ -38,8 +38,13 @@ def load_predictions(data_path):
             data = json.loads(line)
             qcode = data['qcode']
             del data['qcode']
+            non_empty_predictions = []
+            for p in data['predictions']:
+                if len(p['answer']):
+                    non_empty_predictions.append(p)
+            data['predictions'] = non_empty_predictions
             predictions[qcode] = data
-    
+             
     return predictions
 
 def get_prediction(predictions, qcode, mode=None):
