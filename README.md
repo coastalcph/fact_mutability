@@ -65,7 +65,7 @@ python evaluation.py --predictions_path <PATH>
 | ----------------------  | --------------- | ---- |
 | huggyllama/llama-7b     | perplexity      | 27.7 |
 | huggyllama/llama-7b     | first token     | 27.7 |
-| chavinlo/alpaca-native  | perplexity      | 53.5 |
+| chavinlo/alpaca-native  | perplexity      | 54.1 |
 | chavinlo/alpaca-native  | first token     | 34.4 |
 
 #### With aliases 
@@ -74,5 +74,5 @@ python evaluation.py --predictions_path <PATH>
 | ----------------------  | --------------- | ---- |
 | huggyllama/llama-7b     | perplexity      | 30.8 |
 | huggyllama/llama-7b     | first token     | 30.7 |
-| chavinlo/alpaca-native  | perplexity      | 56.6 |
+| chavinlo/alpaca-native  | perplexity      | 57.2 |
 | chavinlo/alpaca-native  | first token     | 38.0 |
