@@ -131,5 +131,5 @@ for prop in properties:
                      'id': '{}_{}_{}'.format(subj_item['qcode'], prop, '2023'),
                      'relation': prop})
 
-with open('data/immutable.json', 'w') as f:
+with open('data/immutable/data.json', 'w') as f:
     f.write('\n'.join([json.dumps(line) for line in data]))

@@ -27,7 +27,7 @@ def get_aliases(endpoint_url, qcode):
     results = sparql.query().convert()
     return [result['altLabel']['value'] for result in results["results"]["bindings"]]
 
-for split in ['train', 'val', 'test', 'immutable']:
+for split in ['templama/train', 'templama/val', 'templama/test', 'immutable/data', 'lama/data']:
     lines = []
     print(split)
     for line in tqdm(open('data/{}.json'.format(split))):
