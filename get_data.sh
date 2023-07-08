@@ -1,5 +1,5 @@
-mkdir debug_data
-cd debug_data
+mkdir data
+cd data
 
 # original
 mkdir templama
