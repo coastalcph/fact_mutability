@@ -25,8 +25,8 @@ def build_relations(dataset):
 
 def main():
     for split in ['val']:
-        immutable_dataset = build_dataset('data/immutable_with_aliases.json')
-        dataset = build_dataset('data/{}_with_aliases.json'.format(split))
+        immutable_dataset = build_dataset('data/immutable/data_with_aliases.json')
+        dataset = build_dataset('data/templama/{}_with_aliases.json'.format(split))
         predictions_imm = load_predictions('data/predictions-imm-alpaca.json')
         predictions_mu = load_predictions('data/predictions-mut-alpaca.json')
 
