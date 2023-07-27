@@ -57,6 +57,26 @@ python evaluation.py --predictions_path <PATH>
 | chavinlo/alpaca-native  | perplexity      | 20.7 |
 | chavinlo/alpaca-native  | first token     | 18.8 |
 
+### LAMA Results
+
+#### Without aliases 
+
+| Model                   | Prediction mode |  F1  |
+| ----------------------  | --------------- | ---- |
+| huggyllama/llama-7b     | perplexity      | 35.5 |
+| huggyllama/llama-7b     | first token     | 30.8 |
+| chavinlo/alpaca-native  | perplexity      | 69.7 |
+| chavinlo/alpaca-native  | first token     | 33.4 |
+
+#### With aliases 
+
+| Model                   | Prediction mode |  F1  |
+| ----------------------  | --------------- | ---- |
+| huggyllama/llama-7b     | perplexity      | 41.5 |
+| huggyllama/llama-7b     | first token     | 36.3 |
+| chavinlo/alpaca-native  | perplexity      | 73.5 |
+| chavinlo/alpaca-native  | first token     | 39.0 |
+
 ### Immutable Results
 
 #### Without aliases 
