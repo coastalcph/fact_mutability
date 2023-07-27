@@ -12,7 +12,8 @@ def evaluate(data, predictions, target_mode, prediction_mode):
         target = query.get_relevant_target(target_mode)
         if target is None: continue
         prediction = get_prediction(predictions, query.id, prediction_mode)
-        if prediction is None: continue
+        #if not len(prediction['answer']):
+        #    continue
         qa_targets.append({'answers': {'answer_start': [0]*len(target), 'text': target}, 'id': query.id})
         qa_predictions.append({'prediction_text': prediction['answer'], 'id': query.id})
     

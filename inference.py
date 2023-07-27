@@ -5,10 +5,10 @@ import os
 import numpy as np
 
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig, AutoModelForSeq2SeqLM
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-NUM_BEAMS = 10
+NUM_BEAMS = 1
 MAX_ANSWER_LENGTH=10
 
 TEMPLATES={'query_in_instructions': (
@@ -33,45 +33,26 @@ def prepare_prompt(query, args):
         instruction = args.instruction 
         template = TEMPLATES[args.template]
         return template.format(instruction, query)
+    elif 'flan' in args.model_name_or_path:
+        if len(args.instruction):
+            return '{}: {}'.format(args.instruction, query)
+        else:
+            return query
     else:
         return query
     
-def get_scores(sequences, model, input_ids, prompt, query, tokenizer):
-    
-    with torch.no_grad():
-        logits = model(sequences)['logits']
-    # we only case about the scores of the actual answer so we have to trim the  sequences
-    trimmed_sequences = []
-    trimmed_logits = []
-    offset = input_ids.shape[-1] # omit outputs for the prompt
-    for sequence, l in zip(sequences, logits):
-        # alpaca models tend to repeat the query - we want to omit that
-        if tokenizer.decode(sequence[offset:], skip_special_tokens=True).startswith(query):
-            offset = len(tokenizer.encode(prompt + query, add_special_tokens=True))
-        # at the front (dropping the prompt and a possibly repeated query)
-        sequence = sequence[offset:].cpu().tolist()
-        # at the back (dropping padding and punctuation)
-        sequence = [idx for idx in sequence if idx not in [0,1,2,29889]] 
-        # to max_length
-        sequence = sequence[:MAX_ANSWER_LENGTH]
-        trimmed_sequences.append(sequence)
-        trimmed_logits.append(l[offset - 1: offset - 1 + len(sequence)])
+def get_scores(model_output, input_ids, prompt, query, tokenizer):
+    '''Assumes num_beam=1 and is flat-t5 specific. Gets the token scores for every token that is not BOS, EOS or fullstop, 
+    gets the first non-the token score and computes pplx.'''
+    sequence = model_output['sequences'][0].cpu().tolist()[1:] # [1:] ignores the BOS token
+    trimmed_sequence = [idx for idx in sequence if idx not in [1, 5]] # ignore EOS and fullstop
+    token_scores = [torch.softmax(score, 1)[:,idx].cpu().item() for idx, score in zip(sequence, model_output['scores']) if idx not in [1, 5]]
+    answer = tokenizer.decode(trimmed_sequence)
+    first_token_score = token_scores[0] if not answer.split()[0] in ['the', 'a', 'an'] else token_scores[1]
+    perplexity = np.exp(-np.mean(np.log(token_scores))) 
 
-    answers = [tokenizer.decode(ts) for ts in trimmed_sequences]
-    distributions = [torch.softmax(l, 1) for l in trimmed_logits]
-    token_scores = [[distribution[i][sequence[i]].item() for i in range(len(sequence))] 
-                                              for distribution, sequence in zip(distributions, trimmed_sequences)]
-    first_token_score = []
-    for ts, answer in zip(token_scores, answers):
-        if not len(ts):
-            first_token_score.append(0)
-        elif answer.startswith('the') and len(ts) > 1:
-            first_token_score.append(ts[1])
-        else:
-            first_token_score.append(ts[0])
-    perplexity = [np.exp(-np.mean(np.log(ts))) for ts in token_scores]
+    return answer, token_scores, first_token_score, perplexity
 
-    return answers, token_scores, first_token_score, perplexity
             
 def inference(dataset, tokenizer, model, args):
     config = GenerationConfig(
@@ -91,19 +72,19 @@ def inference(dataset, tokenizer, model, args):
         with torch.no_grad():
             prompt = prepare_prompt(query, args)
             input_ids = tokenizer.encode(prompt, return_tensors='pt').to(device)
-            model_output = model.generate(input_ids, generation_config=config)
+            model_output = model.generate(input_ids, generation_config=config, output_scores=True)
         
-        answers, token_scores, first_token_score, perplexity = get_scores(model_output['sequences'], model, input_ids, prompt, query, tokenizer)
+        answer, token_scores, first_token_score, perplexity = get_scores(model_output, input_ids, prompt, query, tokenizer)
         outputs['raw_predictions'].append({"qcode": qcode, "query": query, 
-                                           "predictions": [{'output_ids': model_output['sequences'][i].cpu().tolist(),
-                                           "answer": tokenizer.decode(model_output['sequences'][i])}
-                                           for i in range(NUM_BEAMS)]})
+                                           "predictions": [{'output_ids': model_output['sequences'][0].cpu().tolist(),
+                                           "answer": tokenizer.decode(model_output['sequences'][0])}
+                                           ]})
         outputs['predictions'].append({"qcode": qcode, "query": query, 
-                                       "predictions": [{'answer': answers[i],
-                                                        'per_token_probability': token_scores[i],
-                                                        'first_token_probability': first_token_score[i],
-                                                        'perplexity': perplexity[i]} 
-                                        for i in range(NUM_BEAMS)]})
+                                       "predictions": [{'answer': answer,
+                                                        'per_token_probability': token_scores,
+                                                        'first_token_probability': first_token_score,
+                                                        'perplexity': perplexity} 
+                                            ]})
     return outputs
 
 def main(args):
@@ -114,7 +95,10 @@ def main(args):
         tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, use_fast=False)
     else:
         tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
-    model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path).to(device)
+    if 't5' not in args.model_name_or_path:
+        model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path).to(device)
+    else:
+        model = AutoModelForSeq2SeqLM.from_pretrained(args.model_name_or_path, load_in_8bit=True, device_map="auto")
     model.eval()
     
     print('Loading dataset')
@@ -139,7 +123,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Inference')
-    parser.add_argument("--queries_path", type=str, default='data/val.txt', help="Path to txt file, one query per line")
+    parser.add_argument("--queries_path", type=str, default='data/templama/val.txt', help="Path to txt file, one query per line")
     parser.add_argument("--template", type=str, default='query_in_response', help="query_in_instructions, query_in_response or query_in_input")
     parser.add_argument("--instruction", type=str, default="Complete the fact in as few words as possible")
     parser.add_argument("--output_dir", type=str, default='output', help="Dir where model outputs will be stored")

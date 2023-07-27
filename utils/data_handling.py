@@ -9,7 +9,7 @@ def build_dataset(data_path):
         data = json.loads(line)
         query_id = "_".join(data['id'].split("_")[:2])
         query = data['query']
-        year = data['date']
+        year = data.get('date', '2021')
         relation = data['relation']
         if query_id not in queries:
             queries[query_id] = {
@@ -49,7 +49,9 @@ def load_predictions(data_path):
 
 def get_prediction(predictions, qcode, mode=None):
     if qcode not in predictions:
-        return None
+        return {'answer': ''}
+    if not len(predictions[qcode]['predictions']):
+        return {'answer': ''}
 
     if mode is None:
         return predictions[qcode]

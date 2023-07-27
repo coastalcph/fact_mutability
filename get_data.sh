@@ -17,20 +17,27 @@ cd ..
 # immutable
 mkdir immutable
 cd immutable
-wget https://huggingface.co/datasets/Yova/immutable_facts/resolve/main/immutable.json
-wget https://huggingface.co/datasets/Yova/immutable_facts/resolve/main/immutable_with_aliases.json
+wget https://huggingface.co/datasets/Yova/immutable_facts/resolve/main/immutable/data.json
+wget https://huggingface.co/datasets/Yova/immutable_facts/resolve/main/immutable/data_with_aliases.json
 cd ..
 
 # lama
 mkdir lama
 cd lama
-wget https://dl.fbaipublicfiles.com/LAMA/data.zip
-unzip data.zip
-mv data/TREx .
-rm data.zip
-rm -r data
-cd ..
+## STEPS FOR CREATING THE DATA
+#wget https://dl.fbaipublicfiles.com/LAMA/data.zip
+#unzip data.zip
+#mv data/TREx .
+#mv data/relations.jsonl .
+#rm data.zip
+#rm -r data
+#cd ..
+##
+wget https://huggingface.co/datasets/Yova/immutable_facts/resolve/main/lama/data.json
+wget https://huggingface.co/datasets/Yova/immutable_facts/resolve/main/lama/data_with_aliases.json
+cd..
 
 cd ..
-python utils/format_lama_data.py
+#python utils/format_lama_data.py
+#rm -r data/lama/TREx
 python utils/extract_queries_only.py
