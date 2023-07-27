@@ -47,6 +47,7 @@ python evaluation.py --predictions_path <PATH>
 | huggyllama/llama-7b     | first token     | 12.3 |
 | chavinlo/alpaca-native  | perplexity      | 17.7 |
 | chavinlo/alpaca-native  | first token     | 15.6 |
+| google/flan-t5-xxl      | either          | 7.7  |
 
 #### With aliases (target_mode: most recent answer)
 
@@ -56,6 +57,7 @@ python evaluation.py --predictions_path <PATH>
 | huggyllama/llama-7b     | first token     | 14.4 |
 | chavinlo/alpaca-native  | perplexity      | 20.7 |
 | chavinlo/alpaca-native  | first token     | 18.8 |
+| google/flan-t5-xxl      | either          | 10.1 |
 
 ### LAMA Results
 
@@ -63,19 +65,13 @@ python evaluation.py --predictions_path <PATH>
 
 | Model                   | Prediction mode |  F1  |
 | ----------------------  | --------------- | ---- |
-| huggyllama/llama-7b     | perplexity      | 35.5 |
-| huggyllama/llama-7b     | first token     | 30.8 |
-| chavinlo/alpaca-native  | perplexity      | 69.7 |
-| chavinlo/alpaca-native  | first token     | 33.4 |
+| google/flan-t5-xxl      | either          | 34.1 |
 
 #### With aliases 
 
 | Model                   | Prediction mode |  F1  |
 | ----------------------  | --------------- | ---- |
-| huggyllama/llama-7b     | perplexity      | 41.5 |
-| huggyllama/llama-7b     | first token     | 36.3 |
-| chavinlo/alpaca-native  | perplexity      | 73.5 |
-| chavinlo/alpaca-native  | first token     | 39.0 |
+| google/flan-t5-xxl      | either          | 40.9 |
 
 ### Immutable Results
 
@@ -87,6 +83,7 @@ python evaluation.py --predictions_path <PATH>
 | huggyllama/llama-7b     | first token     | 27.7 |
 | chavinlo/alpaca-native  | perplexity      | 54.1 |
 | chavinlo/alpaca-native  | first token     | 34.4 |
+| google/flan-t5-xxl      | either          | 53.2 |
 
 #### With aliases 
 
@@ -96,3 +93,4 @@ python evaluation.py --predictions_path <PATH>
 | huggyllama/llama-7b     | first token     | 30.7 |
 | chavinlo/alpaca-native  | perplexity      | 57.2 |
 | chavinlo/alpaca-native  | first token     | 38.0 |
+| google/flan-t5-xxl      | either          | 56.6 |
