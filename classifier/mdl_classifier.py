@@ -68,7 +68,7 @@ class CustomTrainingArguments(TrainingArguments):
 
 @dataclass
 class DataTrainingArguments:
-    portion_sizes: List[int]
+    portion_sizes: List[float]
     portion_idx: int
     dataset_name: Optional[str] = field(
         default="cfierro/mutability_classifier_data",
