@@ -142,7 +142,7 @@ def main(device):
         model_name_for_file = "_".join(name_path[-max(3, len(name_path)) :])
     dirname = "_".join(
         [
-            data_args.portion_idx,
+            str(data_args.portion_idx),
             model_name_for_file,
             "{:%d%h_%H%M}".format(datetime.today()),
         ]
