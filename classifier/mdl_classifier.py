@@ -68,12 +68,12 @@ class CustomTrainingArguments(TrainingArguments):
 
 @dataclass
 class DataTrainingArguments:
+    portion_sizes: List[int]
+    portion_idx: int
     dataset_name: Optional[str] = field(
         default="cfierro/mutability_classifier_data",
         metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
-    portion_sizes: List[int]
-    portion_idx: int
 
 
 @dataclass
@@ -187,6 +187,9 @@ def main(device):
         if training_args.early_stopping
         else None,
     )
+
+    logger.info(f'Training size: {len(tokenized_ds["train"])}')
+    logger.info(f'Validation size: {len(tokenized_ds["validation"])}')
 
     if training_args.do_train:
         for name, param in model.named_parameters():
