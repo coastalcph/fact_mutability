@@ -12,11 +12,10 @@ python train_classifier.py \
     --save_strategy "epoch" --save_total_limit 1 \
     --load_best_model_at_end True --do_train
 """
+import json
 import logging
 import os
 import re
-import json
-import pandas as pd
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -25,14 +24,16 @@ from typing import List, Optional
 
 import evaluate
 import numpy as np
+import pandas as pd
 import torch
+import transformers
 import wandb
 from datasets import load_dataset
 from transformers import (
-    EarlyStoppingCallback,
     AutoModelForSequenceClassification,
     AutoTokenizer,
     DataCollatorWithPadding,
+    EarlyStoppingCallback,
     HfArgumentParser,
     Trainer,
     TrainingArguments,
@@ -99,7 +100,8 @@ def compute_metrics(eval_pred):
     return {
         **accuracy.compute(predictions=predictions, references=labels),
         **precision.compute(predictions=predictions, references=labels),
-        'log_prob': np.sum(np.log2(np.max(prediction_scores, axis=1))),
+        # TODO: softmax
+        "log_prob": np.sum(np.log2(np.max(prediction_scores, axis=1))),
     }
 
 
@@ -116,7 +118,15 @@ def main(device):
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
-    project_name = "mutability_classifier"
+    if training_args.should_log:
+        transformers.utils.logging.set_verbosity_info()
+    log_level = training_args.get_process_log_level()
+    logger.setLevel(log_level)
+    transformers.utils.logging.set_verbosity(log_level)
+    transformers.utils.logging.enable_default_handler()
+    transformers.utils.logging.enable_explicit_format()
+
+    project_name = "mdl_mutability_classifiers"
     if "WANDB_PROJECT" in os.environ:
         project_name = os.getenv("WANDB_PROJECT")
     run_name = "(predict) " if training_args.do_predict else ""
@@ -149,14 +159,17 @@ def main(device):
         int(portion_size * len(ds["train"])) for portion_size in data_args.portion_sizes
     ]
     if data_args.portion_idx < len(portion_indices) - 1:
-        ds["validation"] = ds["train"][
-            portion_indices[data_args.portion_idx] : portion_indices[
-                data_args.portion_idx + 1
-            ]
-        ]
+        ds["validation"] = ds["train"].select(
+            np.arange(
+                portion_indices[data_args.portion_idx],
+                portion_indices[data_args.portion_idx + 1],
+            )
+        )
     else:
         ds["validation"] = ds["validation"].rename_column("is_mutable", "label")
-    ds["train"] = ds["train"][0 : portion_indices[data_args.portion_idx]]
+    ds["train"] = ds["train"].select(
+        np.arange(0, portion_indices[data_args.portion_idx])
+    )
 
     tokenized_ds = ds.map(partial(replace_subject, tokenizer))
     print("Example of training example:", tokenized_ds["train"][0])
@@ -195,6 +208,7 @@ def main(device):
         for name, param in model.named_parameters():
             if not name.startswith("score"):
                 param.requires_grad = False
+            logger.info(f"{name} {param.requires_grad}")
 
         if tokenizer.pad_token is None:
             tokenizer.add_special_tokens({"pad_token": "[PAD]"})
@@ -217,4 +231,3 @@ def main(device):
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     main(device)
-
