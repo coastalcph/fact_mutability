@@ -158,7 +158,8 @@ def main(device):
         .shuffle(seed=training_args.seed)
     )
     portion_indices = [
-        int(portion_size * len(ds["train"])) for portion_size in data_args.portion_sizes
+        int(portion_size * 0.01 * len(ds["train"]))
+        for portion_size in data_args.portion_sizes
     ]
     if data_args.portion_idx < len(portion_indices) - 1:
         ds["validation"] = ds["train"].select(
