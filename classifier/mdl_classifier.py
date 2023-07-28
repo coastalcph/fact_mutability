@@ -97,11 +97,12 @@ def compute_metrics(eval_pred):
     precision = evaluate.load("precision")
     prediction_scores, labels = eval_pred
     predictions = np.argmax(prediction_scores, axis=1)
+    best_scores = np.max(prediction_scores, axis=1)
+    probs = np.exp(best_scores) / sum(np.exp(best_scores))
     return {
         **accuracy.compute(predictions=predictions, references=labels),
         **precision.compute(predictions=predictions, references=labels),
-        # TODO: softmax
-        "log_prob": np.sum(np.log2(np.max(prediction_scores, axis=1))),
+        "log_prob": np.sum(np.log2(probs)),
     }
 
 
