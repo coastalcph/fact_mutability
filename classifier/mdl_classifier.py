@@ -97,12 +97,15 @@ def compute_metrics(eval_pred):
     precision = evaluate.load("precision")
     prediction_scores, labels = eval_pred
     predictions = np.argmax(prediction_scores, axis=1)
-    best_scores = np.max(prediction_scores, axis=1)
-    probs = np.exp(best_scores) / sum(np.exp(best_scores))
+    exp_pred_scores = np.exp(prediction_scores)
+    labels_probs = exp_pred_scores[np.arange(len(labels)), labels] / np.sum(
+        exp_pred_scores, axis=1
+    )
     return {
         **accuracy.compute(predictions=predictions, references=labels),
         **precision.compute(predictions=predictions, references=labels),
-        "log_prob": np.sum(np.log2(probs)),
+        "sum_log2_prob": np.sum(np.log2(labels_probs)),
+        "mean_log_prob": np.mean(-np.log(labels_probs)),
     }
 
 
