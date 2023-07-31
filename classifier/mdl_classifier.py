@@ -75,6 +75,7 @@ class DataTrainingArguments:
         default="cfierro/mutability_classifier_data",
         metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
+    random_labels: Optional[bool] = field(default=False)
 
 
 @dataclass
@@ -177,6 +178,10 @@ def main(device):
         np.arange(0, portion_indices[data_args.portion_idx])
     )
 
+    if data_args.random_labels:
+        rng = np.random.default_rng(training_args.seed)
+        ds = ds.map(lambda example: {"labels": rng.integers(0, 2)})
+
     tokenized_ds = ds.map(partial(replace_subject, tokenizer))
     print("Example of training example:", tokenized_ds["train"][0])
     print("Loading model")
@@ -237,3 +242,4 @@ def main(device):
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     main(device)
+
