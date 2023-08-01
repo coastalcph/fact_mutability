@@ -183,10 +183,12 @@ def main(device):
         rng = np.random.default_rng(training_args.seed)
         # Using an OrderedDict so we can have the same order each time.
         relations = list(OrderedDict.fromkeys(ds["train"]["relation"]))
+        relations += list(OrderedDict.fromkeys(ds["validation"]["relation"]))
         new_labels = {
             relations[i]: label
             for i, label in enumerate(rng.integers(0, 2, len(relations)))
         }
+        print("New random labels:", new_labels)
         ds = ds.map(lambda example: {"labels": new_labels[example["relation"]]})
 
     tokenized_ds = ds.map(partial(replace_subject, tokenizer))
