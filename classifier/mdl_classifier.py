@@ -184,7 +184,8 @@ def main(device):
         # Using an OrderedDict so we can have the same order each time.
         relations = list(OrderedDict.fromkeys(ds["train"]["relation"]))
         new_labels = {
-            relations[i]: label for i, label in rng.integers(0, 2, len(relations))
+            relations[i]: label
+            for i, label in enumerate(rng.integers(0, 2, len(relations)))
         }
         ds = ds.map(lambda example: {"labels": new_labels[example["relation"]]})
 
