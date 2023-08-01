@@ -17,6 +17,7 @@ import logging
 import os
 import re
 import sys
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import partial
@@ -75,7 +76,7 @@ class DataTrainingArguments:
         default="cfierro/mutability_classifier_data",
         metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
-    random_labels: Optional[bool] = field(default=False)
+    random_labels_per_relation: Optional[bool] = field(default=False)
 
 
 @dataclass
@@ -178,9 +179,14 @@ def main(device):
         np.arange(0, portion_indices[data_args.portion_idx])
     )
 
-    if data_args.random_labels:
+    if data_args.random_labels_per_relation:
         rng = np.random.default_rng(training_args.seed)
-        ds = ds.map(lambda example: {"labels": rng.integers(0, 2)})
+        # Using an OrderedDict so we can have the same order each time.
+        relations = list(OrderedDict.fromkeys(ds["train"]["relation"]))
+        new_labels = {
+            relations[i]: label for i, label in rng.integers(0, 2, len(relations))
+        }
+        ds = ds.map(lambda example: {"labels": new_labels[example["relation"]]})
 
     tokenized_ds = ds.map(partial(replace_subject, tokenizer))
     print("Example of training example:", tokenized_ds["train"][0])
@@ -242,4 +248,3 @@ def main(device):
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     main(device)
-
