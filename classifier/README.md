@@ -32,6 +32,7 @@
 | P413 | LAMA | 0 | [X] plays as [Y]</br> [X] plays in the position of [Y] | 952 | The football position in which a person plays. |
 
 # Results
+## Classifier-accuracy results
 Run sweep in wandb
 ```yaml
 method: random
@@ -86,7 +87,7 @@ Best hparams:
 - per_device_train_batch_size=8
 - warmup_ratio=0.1
 
-## Evaluation
+### Accuracy
 | Split | Accuracy Mutable | Accuracy Immutable |
 |---|---|---|
 | Train | 99.7 | 97.4 |
@@ -95,3 +96,14 @@ Best hparams:
 | Test (-P413) | 85.4 | 79.8 |
 
 Obs: The accuracy on the P413 relation is 0.07, maybe because it's being representated quite similar to P54? Both are about football players, but one P54 is about the club where the person plays and the other the position.
+
+## MDL
+Background: https://aclanthology.org/2020.emnlp-main.14/
+
+Time steps used: 0.1 0.2 0.4 0.8 1.6 3.2 6.25 12.5 25 50 (percentage of the train data)
+
+| Task | Online code-length | Compression |
+|---|---|---|
+| mutable-vs-immutable | 18.97 | 97.4 | 207.5 |
+| relations with random labels | 32.89 | 119.7 |
+
