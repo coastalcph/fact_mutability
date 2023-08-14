@@ -201,7 +201,7 @@ def main(device):
         ) as writer:
             writer.write(json.dumps(trainer_predict.metrics))
         output_predict_file = os.path.join(
-            training_args.output_dir, "predict_results.txt"
+            training_args.output_dir, "predict_results.json"
         )
         if trainer.is_world_process_zero():
             data = []
@@ -218,7 +218,7 @@ def main(device):
             df = pd.DataFrame(
                 data, columns=["input", "relation", "prediction", "pred_score", "label"]
             )
-            df.to_csv(output_predict_file, index=False)
+            df.to_json(output_predict_file)
             df["correct_pred"] = df["prediction"] == df["label"]
             acc_per_relation = (
                 df[["relation", "correct_pred"]]
