@@ -178,6 +178,9 @@ def main(device):
     ds["train"] = ds["train"].select(
         np.arange(0, portion_indices[data_args.portion_idx])
     )
+    print("portion_sizes", data_args.portion_sizes)
+    print(f'Training size: {len(ds["train"])}')
+    print(f'Validation size: {len(ds["validation"])}')
 
     if data_args.random_labels_per_relation:
         rng = np.random.default_rng(training_args.seed)
@@ -222,14 +225,14 @@ def main(device):
         else None,
     )
 
-    logger.info(f'Training size: {len(tokenized_ds["train"])}')
-    logger.info(f'Validation size: {len(tokenized_ds["validation"])}')
+    print(f'Training size: {len(tokenized_ds["train"])}')
+    print(f'Validation size: {len(tokenized_ds["validation"])}')
 
     if training_args.do_train:
         for name, param in model.named_parameters():
             if not name.startswith("score"):
                 param.requires_grad = False
-            logger.info(f"{name} {param.requires_grad}")
+            print(f"{name} {param.requires_grad}")
 
         if tokenizer.pad_token is None:
             tokenizer.add_special_tokens({"pad_token": "[PAD]"})
@@ -247,6 +250,11 @@ def main(device):
         metrics["eval_samples"] = len(tokenized_ds["validation"])
         trainer.log_metrics("eval", metrics)
         trainer.save_metrics("eval", metrics)
+
+        metrics = trainer.evaluate(eval_dataset=tokenized_ds["train"])
+        metrics["train_samples"] = len(tokenized_ds["train"])
+        trainer.log_metrics("train", metrics)
+        trainer.save_metrics("train", metrics)
 
 
 if __name__ == "__main__":
