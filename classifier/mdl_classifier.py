@@ -189,7 +189,8 @@ def main(device):
             for i, label in enumerate(rng.integers(0, 2, len(relations)))
         }
         print("New random labels:", new_labels)
-        ds = ds.map(lambda example: {"labels": new_labels[example["relation"]]})
+        ds["train"] = ds["train"].map(lambda example: {"labels": new_labels[example["relation"]]})
+        ds["validation"] = ds["validation"].map(lambda example: {"labels": new_labels[example["relation"]]})
 
     tokenized_ds = ds.map(partial(replace_subject, tokenizer))
     print("Example of training example:", tokenized_ds["train"][0])
