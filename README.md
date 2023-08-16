@@ -7,13 +7,19 @@ conda create -n fact_mutability
 conda activate fact_mutability
 pip install torch==2.0.0
 pip install git+https://github.com/huggingface/transformers
+conda install matplotlib
+
+# (Optional) For the iPython kernel
+conda install -c anaconda ipykernel
+python -m ipykernel install --user --name=fact_mutability
 ```
+
 Download and prepare the data
 ```
 ./get_data.sh
 ```
 
-### Split queries in never, rarely, and oftern mutable
+### Split queries in never, rarely, and often mutable
 
 ```
 python -m utils.split_mutable
@@ -37,7 +43,7 @@ python evaluation.py --predictions_path <PATH>
 [Here](https://huggingface.co/spaces/Yova/fm_predictions) (`qir` means query in response)
 
 
-### Validation Results
+### TempLAMA/Validation Results
 
 #### Without aliases (target_mode: most recent answer)
 
