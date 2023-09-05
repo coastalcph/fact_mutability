@@ -1,4 +1,8 @@
 # Data
+The data was defined such that as much as possible:
+- The entities don't overlap between the splits (so that the type or the same entity can't be used as a proxy for mutable/immutable)
+- The templates have different constructions so e.g. one class does not always finishes with the same proposition
+
 ## Train
 
 | Relation | Source | Mutable? | Template |  Count | Comment |
