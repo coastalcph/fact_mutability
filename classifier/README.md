@@ -92,6 +92,8 @@ Best hparams:
 - warmup_ratio=0.1
 
 ### Accuracy
+Accuracy in the table is computed as the macro average over relations
+
 | Split | Accuracy Mutable | Accuracy Immutable |
 |---|---|---|
 | Train | 99.7 | 97.4 |
@@ -100,6 +102,9 @@ Best hparams:
 | Test (-P413) | 85.4 | 79.8 |
 
 Obs: The accuracy on the P413 relation is 0.07, maybe because it's being representated quite similar to P54? Both are about football players, but one P54 is about the club where the person plays and the other the position.
+
+- Accuracy over all the examples (-P413): 0.833
+- Macro average over all relations (-P413): 0.83
 
 ## MDL
 Background: https://aclanthology.org/2020.emnlp-main.14/
