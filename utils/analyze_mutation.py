@@ -24,11 +24,16 @@ def build_relations(dataset):
 
 
 def main():
+    model = "flan-t5"
     for split in ['val']:
-        immutable_dataset = build_dataset('data/immutable/data_with_aliases.json')
-        dataset = build_dataset('data/templama/{}_with_aliases.json'.format(split))
-        predictions_imm = load_predictions('data/predictions-imm-alpaca.json')
-        predictions_mu = load_predictions('data/predictions-mut-alpaca.json')
+        immutable_dataset = build_dataset('data/lama_with_aliases.json')  # LAMA
+        predictions_imm = load_predictions(f"data/predictions-lama-{model}.json")  # LAMA
+
+        # immutable_dataset = build_dataset('data/immutable_with_aliases.json')  # Homemade
+        # predictions_imm = load_predictions(f"data/predictions-imm-{model}.json")  # Homemade
+        
+        dataset = build_dataset('data/{}_with_aliases.json'.format(split))  # Mutable
+        predictions_mu = load_predictions(f"data/predictions-val-{model}.json")  # Mutable
 
         relations = build_relations(dataset)
         for relation_id, relation in relations.items():
@@ -46,13 +51,15 @@ def main():
         # Fetch mutation rate (0.0) and confidence for immutable dataset
         for query in immutable_dataset:
             prediction = get_prediction(predictions_imm, query.id)
-            confidences = sorted([p['first_token_probability'] for p in prediction['predictions']], reverse=True)
-            confidences = [c for c in confidences if not np.isnan(c)]
-            confidence = confidences[0]
-            ratio = 0.0
-            mutables['imm']['ratios'].append(ratio)
-            mutables['imm']['confidences'].append(confidence)
-            mutables['imm']['average'].append(np.mean(confidences))
+            if prediction:
+                confidences = sorted([p['first_token_probability'] for p in prediction['predictions']], reverse=True)
+                confidences = sorted([p['perplexity'] for p in prediction['predictions']], reverse=False)
+                confidences = [c for c in confidences if not np.isnan(c)]
+                confidence = confidences[0]
+                ratio = 0.0
+                mutables['imm']['ratios'].append(ratio)
+                mutables['imm']['confidences'].append(confidence)
+                mutables['imm']['average'].append(np.mean(confidences))
 
         for query in dataset:
             ratio = query.get_ratio()
@@ -61,6 +68,7 @@ def main():
             ratio += 0.5 * relation_ratio
             prediction = get_prediction(predictions_mu, query.id)
             confidences = sorted([p['first_token_probability'] for p in prediction['predictions']], reverse=True)
+            confidences = sorted([p['perplexity'] for p in prediction['predictions']], reverse=False)
             confidences = [c for c in confidences if not np.isnan(c)]
             confidence = confidences[0]
             if ratio < 0.3:
