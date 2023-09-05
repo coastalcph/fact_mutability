@@ -250,7 +250,11 @@ def main(device):
     run_name += model_args.model_name_or_path
     if "WANDB_NAME" in os.environ:
         run_name = os.getenv("WANDB_NAME")
-    wandb.init(project=project_name, name=run_name)
+    wandb.init(
+        project=project_name,
+        name=run_name,
+        config={**model_args, **data_args, **training_args},
+    )
 
     os.makedirs(training_args.output_dir, exist_ok=True)
     if "/" in model_args.model_name_or_path:
