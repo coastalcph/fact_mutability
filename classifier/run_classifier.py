@@ -18,7 +18,7 @@ import re
 import json
 import pandas as pd
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from functools import partial
 from typing import List, Optional
@@ -42,6 +42,7 @@ from transformers.modeling_outputs import SequenceClassifierOutputWithPast
 from typing import Tuple, Union
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 from torch import nn
+
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,7 @@ class LlamaForSequenceClassificationPerLayer(LlamaPreTrainedModel):
         super().__init__(config)
         self.num_labels = config.num_labels
         self.model = LlamaModel(config)
+        self.model.eval()
         self.score = nn.Linear(config.hidden_size, self.num_labels, bias=False)
         self.hidden_states_from_layer = hidden_states_from_layer
 
@@ -132,20 +134,21 @@ class LlamaForSequenceClassificationPerLayer(LlamaPreTrainedModel):
         return_dict = (
             return_dict if return_dict is not None else self.config.use_return_dict
         )
-
-        transformer_outputs = self.model(
-            input_ids,
-            attention_mask=attention_mask,
-            position_ids=position_ids,
-            past_key_values=past_key_values,
-            inputs_embeds=inputs_embeds,
-            use_cache=use_cache,
-            output_attentions=output_attentions,
-            output_hidden_states=True,
-            return_dict=return_dict,
-        )
+        with torch.no_grad():
+            transformer_outputs = self.model(
+                input_ids,
+                attention_mask=attention_mask,
+                position_ids=position_ids,
+                past_key_values=past_key_values,
+                inputs_embeds=inputs_embeds,
+                use_cache=use_cache,
+                output_attentions=output_attentions,
+                output_hidden_states=True,
+                return_dict=return_dict,
+            )
         # hidden_states = transformer_outputs[0]
         hidden_states = transformer_outputs.hidden_states[self.hidden_states_from_layer]
+        transformer_outputs.hidden_states = None  # TODO: check this is what we want, trying for OOM
         logits = self.score(hidden_states)
 
         if input_ids is not None:
@@ -253,7 +256,7 @@ def main(device):
     wandb.init(
         project=project_name,
         name=run_name,
-        config={**model_args, **data_args, **training_args},
+        config={**asdict(model_args), **asdict(data_args), **asdict(training_args)},
     )
 
     os.makedirs(training_args.output_dir, exist_ok=True)
