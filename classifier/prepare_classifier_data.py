@@ -69,16 +69,21 @@ def preprocess_templama_data():
     # > Test: 0.374 (2000)
     # 0.187 P39 (X holds the position of Y -> "X serves as Y")
     # 0.187 P54 (X plays for Y) / X is associated with Y
-    files = ["../data/train.json", "../data/val.json", "../data/test.json"]
+    files = [
+        "../data/templama/train.json",
+        "../data/templama/val.json",
+        "../data/templama/test.json",
+    ]
     df = None
     for f in files:
         sub_df = pd.read_json(f, lines=True)
         df = pd.concat([df, sub_df]) if df is not None else sub_df
     df = df[~df["relation"].isin(["P69", "P127"])]
+    df["sub_uri"] = df.apply(lambda x: x["id"].split("_")[0], axis=1)
     df_agg = (
-        df[["query", "answer", "id", "relation"]]
+        df[["query", "answer", "id", "relation", "sub_uri"]]
         .groupby(["relation", "query"], as_index=False)
-        .agg({"answer": list, "id": list})
+        .agg({"answer": list, "id": list, "sub_uri": set})
     )
     answers_sets = []
     for ids, answers_per_year in zip(df_agg.id, df_agg.answer):
@@ -103,7 +108,9 @@ def preprocess_templama_data():
     df_agg["template"] = templates
     df_agg["subject"] = subjects
     df_agg["is_mutable"] = 1
-    return df_agg[["relation", "template", "subject", "answers", "is_mutable"]]
+    return df_agg[
+        ["relation", "template", "subject", "answers", "is_mutable", "sub_uri"]
+    ]
 
 
 def preprocess_pararel_data():
@@ -125,7 +132,10 @@ def preprocess_pararel_data():
     # P413 (X plays in Y position)
     ds = load_dataset("cfierro/pararel_data", use_auth_token=True)
     pararel = pd.DataFrame(
-        {k: ds["train"][k] for k in ["relation", "template", "subject", "object"]}
+        {
+            k: ds["train"][k]
+            for k in ["relation", "template", "subject", "object", "sub_uri"]
+        }
     )
     pararel["template_obj@end_removed"] = pararel.apply(
         lambda x: re.sub(r" \[Y\]\s?\.?$", "", x["template"].strip()), axis=1
@@ -180,7 +190,9 @@ def preprocess_pararel_data():
     pararel["is_mutable"] = 0
     pararel.loc[pararel.relation.isin(MUTABLE_LAMA_RELATIONS), "is_mutable"] = 1
     pararel["answers"] = [[object_] for object_ in pararel.object]
-    return pararel[["relation", "template", "subject", "answers", "is_mutable"]]
+    return pararel[
+        ["relation", "template", "subject", "answers", "is_mutable", "sub_uri"]
+    ]
 
 
 if __name__ == "__main__":
@@ -205,4 +217,3 @@ if __name__ == "__main__":
     )
     print("Pushing to the hub...")
     ds.push_to_hub("cfierro/mutability_classifier_data", private=True)
-
