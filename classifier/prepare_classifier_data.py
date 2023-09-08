@@ -108,6 +108,7 @@ def preprocess_templama_data():
     df_agg["template"] = templates
     df_agg["subject"] = subjects
     df_agg["is_mutable"] = 1
+    df_agg["sub_uri"] = [list(ids) for ids in df_agg.sub_uri]
     return df_agg[
         ["relation", "template", "subject", "answers", "is_mutable", "sub_uri"]
     ]
@@ -190,6 +191,7 @@ def preprocess_pararel_data():
     pararel["is_mutable"] = 0
     pararel.loc[pararel.relation.isin(MUTABLE_LAMA_RELATIONS), "is_mutable"] = 1
     pararel["answers"] = [[object_] for object_ in pararel.object]
+    pararel["sub_uri"] = [[uri] for uri in pararel.sub_uri]
     return pararel[
         ["relation", "template", "subject", "answers", "is_mutable", "sub_uri"]
     ]
