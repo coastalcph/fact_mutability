@@ -9,7 +9,7 @@ def build_dataset(data_paths, dataset=None, split=None):
     queries_obj = Queries()
 
     if dataset:
-        dataset_split = load_dataset(dataset)[split]
+        dataset_split = load_dataset(dataset, use_auth_token=True)[split]
         for data in dataset_split:
             for sub_uri in data["sub_uri"]:
                 query_id = "{}_{}".format(sub_uri, data["relation"])
@@ -82,7 +82,6 @@ def load_predictions(data_path):
 
 def get_prediction(predictions, qcode, mode=None):
     if qcode not in predictions:
-        print("Warning: {} not in predictions".format(qcode))
         return {"answer": ""}
     if not len(predictions[qcode]["predictions"]):
         return {"answer": ""}

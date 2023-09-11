@@ -14,8 +14,8 @@ def evaluate(data, predictions, target_mode, prediction_mode):
         if target is None:
             continue
         prediction = get_prediction(predictions, query.id, prediction_mode)
-        # if not len(prediction['answer']):
-        #    continue
+        if not len(prediction['answer']):
+            continue
         qa_targets.append(
             {
                 "answers": {"answer_start": [0] * len(target), "text": target},
@@ -25,6 +25,10 @@ def evaluate(data, predictions, target_mode, prediction_mode):
         qa_predictions.append({"prediction_text": prediction["answer"], "id": query.id})
 
     print("Evaluating on {} datapoints".format(len(qa_targets)))
+    with open('outputs/eval_targets.json', 'w') as f:
+        json.dump(qa_targets, f)
+    with open('outputs/eval_predictions.json', 'w') as f:
+        json.dump(qa_predictions, f)
     return compute_score(predictions=qa_predictions, references=qa_targets)
 
 
