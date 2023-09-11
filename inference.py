@@ -52,12 +52,15 @@ def prepare_prompt(query, args):
 def get_scores(model_output, input_ids, prompt, query, tokenizer):
     """Assumes num_beam=1 and is flat-t5 specific. Gets the token scores for every token that is not BOS, EOS or fullstop,
     gets the first non-the token score and computes pplx."""
-    sequence = (
-        model_output["sequences"][0].cpu().tolist()[1:]
-    )  # [1:] ignores the BOS token
+    #sequence = (
+    #    model_output["sequences"][0].cpu().tolist()[1:]
+    #)  # [1:] ignores the BOS token
+    sequence = model_output["sequences"][0][input_ids.shape[1]:].cpu().tolist()
+    assert tokenizer.convert_ids_to_tokens([29889]) == ['.']
     trimmed_sequence = [
-        idx for idx in sequence if idx not in [1, 5]
+        idx for idx in sequence if idx not in [1, 2, 29889]
     ]  # ignore EOS and fullstop
+    assert len(sequence) == len(model_output["scores"])
     token_scores = [
         torch.softmax(score, 1)[:, idx].cpu().item()
         for idx, score in zip(sequence, model_output["scores"])
