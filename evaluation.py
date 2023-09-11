@@ -1,9 +1,9 @@
 import argparse
 import json
-
-from utils.f1_score import compute_score
+import os
 
 from utils.data_handling import *
+from utils.f1_score import compute_score
 
 
 def evaluate(data, predictions, target_mode, prediction_mode):
@@ -14,7 +14,7 @@ def evaluate(data, predictions, target_mode, prediction_mode):
         if target is None:
             continue
         prediction = get_prediction(predictions, query.id, prediction_mode)
-        if not len(prediction['answer']):
+        if not len(prediction["answer"]):
             continue
         qa_targets.append(
             {
@@ -25,17 +25,18 @@ def evaluate(data, predictions, target_mode, prediction_mode):
         qa_predictions.append({"prediction_text": prediction["answer"], "id": query.id})
 
     print("Evaluating on {} datapoints".format(len(qa_targets)))
-    with open('outputs/eval_targets.json', 'w') as f:
-        json.dump(qa_targets, f)
-    with open('outputs/eval_predictions.json', 'w') as f:
-        json.dump(qa_predictions, f)
     return compute_score(predictions=qa_predictions, references=qa_targets)
 
 
 def main(args):
+    experiment_dir = os.path.join(args.output_dir, args.exp_name)
+    if not os.path.exists(experiment_dir):
+        os.mkdir(experiment_dir)
+
     data = build_dataset(args.data_paths, args.dataset, args.dataset_split)
     predictions = load_predictions(args.predictions_path)
-    scores = evaluate(data, predictions, args.target_mode, args.prediction_mode)
+    df, scores = evaluate(data, predictions, args.target_mode, args.prediction_mode)
+    df.to_json(os.path.join(experiment_dir, "results_per_example.json"))
     print("F1: ", scores["ave_f1"])
 
 
@@ -74,6 +75,13 @@ if __name__ == "__main__":
         choices=["perplexity", "first_token_probability"],
         help="Which prediction do we evaluate",
     )
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default="output",
+        help="Dir where model outputs will be stored",
+    )
+    parser.add_argument("--exp_name", type=str, default="debug", help="Experiment name")
     args = parser.parse_args()
 
     main(args)

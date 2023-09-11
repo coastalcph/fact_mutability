@@ -1,11 +1,11 @@
 """ Official evaluation script for v1.1 of the SQuAD dataset. """
 
-import argparse
-import json
 import re
 import string
 import sys
 from collections import Counter
+
+import pandas as pd
 
 
 def normalize_answer(s):
@@ -55,39 +55,59 @@ def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
 def _compute(dataset, predictions):
     f1 = []
     exact_match = []
+    ids = []
     for article in dataset:
         for paragraph in article["paragraphs"]:
             for qa in paragraph["qas"]:
                 if qa["id"] not in predictions:
-                    message = "Unanswered question " + qa["id"] + " will receive score 0."
+                    message = (
+                        "Unanswered question " + qa["id"] + " will receive score 0."
+                    )
                     print(message, file=sys.stderr)
                     continue
                 ground_truths = list(map(lambda x: x["text"], qa["answers"]))
                 prediction = predictions[qa["id"]]
-                exact_match.append(metric_max_over_ground_truths(exact_match_score, prediction, ground_truths))
-                f1.append(metric_max_over_ground_truths(f1_score, prediction, ground_truths))
+                ids.append(qa["id"])
+                exact_match.append(
+                    metric_max_over_ground_truths(
+                        exact_match_score, prediction, ground_truths
+                    )
+                )
+                f1.append(
+                    metric_max_over_ground_truths(f1_score, prediction, ground_truths)
+                )
 
     ave_exact_match = 100.0 * sum(exact_match) / len(exact_match)
     ave_f1 = 100.0 * sum(f1) / len(f1)
 
-    return {"exact_match": exact_match, "f1": f1, "ave_exact_match": ave_exact_match, "ave_f1": ave_f1}
+    return pd.DataFrame({"id": ids, "f1": f1, "exact_match": exact_match}), {
+        "exact_match": exact_match,
+        "f1": f1,
+        "ave_exact_match": ave_exact_match,
+        "ave_f1": ave_f1,
+    }
+
 
 def compute_score(predictions, references):
-        pred_dict = {prediction["id"]: prediction["prediction_text"] for prediction in predictions}
-        dataset = [
-            {
-                "paragraphs": [
-                    {
-                        "qas": [
-                            {
-                                "answers": [{"text": answer_text} for answer_text in ref["answers"]["text"]],
-                                "id": ref["id"],
-                            }
-                            for ref in references
-                        ]
-                    }
-                ]
-            }
-        ]
-        score = _compute(dataset=dataset, predictions=pred_dict)
-        return score
+    pred_dict = {
+        prediction["id"]: prediction["prediction_text"] for prediction in predictions
+    }
+    dataset = [
+        {
+            "paragraphs": [
+                {
+                    "qas": [
+                        {
+                            "answers": [
+                                {"text": answer_text}
+                                for answer_text in ref["answers"]["text"]
+                            ],
+                            "id": ref["id"],
+                        }
+                        for ref in references
+                    ]
+                }
+            ]
+        }
+    ]
+    return _compute(dataset=dataset, predictions=pred_dict)
