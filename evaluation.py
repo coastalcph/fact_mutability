@@ -29,7 +29,7 @@ def evaluate(data, predictions, target_mode, prediction_mode):
 
 
 def main(args):
-    data = build_dataset(args.data_path)
+    data = build_dataset(args.data_paths, args.dataset, args.dataset_split)
     predictions = load_predictions(args.predictions_path)
     scores = evaluate(data, predictions, args.target_mode, args.prediction_mode)
     print("F1: ", scores["ave_f1"])
@@ -38,10 +38,22 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluation")
     parser.add_argument(
-        "--data_path",
-        type=str,
-        default="data/val_with_aliases.json",
+        "--data_paths",
+        nargs="+",
+        default=["data/val_with_aliases.json"],
         help="Path to data",
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default=None,
+        help="",
+    )
+    parser.add_argument(
+        "--dataset_split",
+        type=str,
+        default=None,
+        help="",
     )
     parser.add_argument("--predictions_path", type=str, help="Path to predictions")
     parser.add_argument(
