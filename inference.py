@@ -57,14 +57,15 @@ def get_scores(model_output, input_ids, prompt, query, tokenizer):
     #)  # [1:] ignores the BOS token
     sequence = model_output["sequences"][0][input_ids.shape[1]:].cpu().tolist()
     assert tokenizer.convert_ids_to_tokens([29889]) == ['.']
+    to_ignore = [1, 2, 29889]
     trimmed_sequence = [
-        idx for idx in sequence if idx not in [1, 2, 29889]
+        idx for idx in sequence if idx not in to_ignore
     ]  # ignore EOS and fullstop
     assert len(sequence) == len(model_output["scores"])
     token_scores = [
         torch.softmax(score, 1)[:, idx].cpu().item()
         for idx, score in zip(sequence, model_output["scores"])
-        if idx not in [1, 5]
+        if idx not in to_ignore
     ]
     answer = tokenizer.decode(trimmed_sequence)
     first_token_score = (
