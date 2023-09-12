@@ -76,7 +76,7 @@ def _compute(dataset, predictions):
                     metric_max_over_ground_truths(f1_score, prediction, ground_truths)
                 )
                 df_data.append(
-                    qa["id"], prediction, ground_truths, f1[-1], exact_match[-1]
+                    (qa["id"], prediction, ground_truths, f1[-1], exact_match[-1])
                 )
 
     ave_exact_match = 100.0 * sum(exact_match) / len(exact_match)
