@@ -55,7 +55,7 @@ def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
 def _compute(dataset, predictions):
     f1 = []
     exact_match = []
-    ids = []
+    df_data = []
     for article in dataset:
         for paragraph in article["paragraphs"]:
             for qa in paragraph["qas"]:
@@ -67,7 +67,6 @@ def _compute(dataset, predictions):
                     continue
                 ground_truths = list(map(lambda x: x["text"], qa["answers"]))
                 prediction = predictions[qa["id"]]
-                ids.append(qa["id"])
                 exact_match.append(
                     metric_max_over_ground_truths(
                         exact_match_score, prediction, ground_truths
@@ -76,11 +75,16 @@ def _compute(dataset, predictions):
                 f1.append(
                     metric_max_over_ground_truths(f1_score, prediction, ground_truths)
                 )
+                df_data.append(
+                    qa["id"], prediction, ground_truths, f1[-1], exact_match[-1]
+                )
 
     ave_exact_match = 100.0 * sum(exact_match) / len(exact_match)
     ave_f1 = 100.0 * sum(f1) / len(f1)
 
-    return pd.DataFrame({"id": ids, "f1": f1, "exact_match": exact_match}), {
+    return pd.DataFrame(
+        df_data, columns=["id", "prediction", "ground_truth", "f1", "exact_match"]
+    ), {
         "exact_match": exact_match,
         "f1": f1,
         "ave_exact_match": ave_exact_match,
