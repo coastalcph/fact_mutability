@@ -1,6 +1,7 @@
 import argparse
-import json
 import os
+
+import wandb
 
 from utils.data_handling import *
 from utils.f1_score import compute_score
@@ -33,10 +34,18 @@ def main(args):
     if not os.path.exists(experiment_dir):
         os.mkdir(experiment_dir)
 
+    project_name = "lm_mutability_preds_eval"
+    wandb.init(
+        project=project_name,
+        name=args.exp_name,
+        config=args,
+    )
+
     data = build_dataset(args.data_paths, args.dataset, args.dataset_split)
     predictions = load_predictions(args.predictions_path)
     df, scores = evaluate(data, predictions, args.target_mode, args.prediction_mode)
     df.to_json(os.path.join(experiment_dir, "results_per_example.json"))
+    wandb.log(scores)
     print("F1: ", scores["ave_f1"])
 
 
