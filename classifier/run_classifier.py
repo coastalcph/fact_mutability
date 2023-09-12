@@ -269,7 +269,7 @@ def main(device):
         model_name_for_file = "_".join(name_path[-max(3, len(name_path)) :])
     dirname = "_".join(
         [
-            model_name_for_file,
+            model_name_for_file, f"hs_{model_args.train_classifier_from_layer}",
             "{:%d%h_%H%M}".format(datetime.today()),
         ]
     )
