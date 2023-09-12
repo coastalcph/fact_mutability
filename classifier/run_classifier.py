@@ -148,7 +148,9 @@ class LlamaForSequenceClassificationPerLayer(LlamaPreTrainedModel):
             )
         # hidden_states = transformer_outputs[0]
         hidden_states = transformer_outputs.hidden_states[self.hidden_states_from_layer]
-        transformer_outputs.hidden_states = None  # TODO: check this is what we want, trying for OOM
+        transformer_outputs.hidden_states = (
+            None  # TODO: check this is what we want, trying for OOM
+        )
         logits = self.score(hidden_states)
 
         if input_ids is not None:
@@ -233,19 +235,7 @@ def compute_metrics(eval_pred):
     }
 
 
-def main(device):
-    parser = HfArgumentParser(
-        (ModelArguments, DataTrainingArguments, CustomTrainingArguments)
-    )
-    if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
-        # If we pass only one argument to the script and it's the path to a json file,
-        # let's parse it to get our arguments.
-        model_args, data_args, training_args = parser.parse_json_file(
-            json_file=os.path.abspath(sys.argv[1])
-        )
-    else:
-        model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-
+def init_wandb(model_args, data_args, training_args):
     project_name = "mutability_classifier"
     if "WANDB_PROJECT" in os.environ:
         project_name = os.getenv("WANDB_PROJECT")
@@ -259,6 +249,20 @@ def main(device):
         config={**asdict(model_args), **asdict(data_args), **asdict(training_args)},
     )
 
+
+def main(device):
+    parser = HfArgumentParser(
+        (ModelArguments, DataTrainingArguments, CustomTrainingArguments)
+    )
+    if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
+        # If we pass only one argument to the script and it's the path to a json file,
+        # let's parse it to get our arguments.
+        model_args, data_args, training_args = parser.parse_json_file(
+            json_file=os.path.abspath(sys.argv[1])
+        )
+    else:
+        model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+
     os.makedirs(training_args.output_dir, exist_ok=True)
     if "/" in model_args.model_name_or_path:
         name_path = model_args.model_name_or_path.split("/")
@@ -271,6 +275,8 @@ def main(device):
     )
     training_args.output_dir = os.path.join(training_args.output_dir, dirname)
     os.makedirs(training_args.output_dir)
+
+    init_wandb(model_args, data_args, training_args)
 
     tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
     ds = load_dataset(data_args.dataset_name, use_auth_token=True)
