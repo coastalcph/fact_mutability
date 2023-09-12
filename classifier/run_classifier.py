@@ -239,7 +239,11 @@ def init_wandb(model_args, data_args, training_args):
     project_name = "mutability_classifier"
     if "WANDB_PROJECT" in os.environ:
         project_name = os.getenv("WANDB_PROJECT")
-    run_name = "(predict) " if training_args.do_predict else ""
+    run_name = (
+        f"(predict-{training_args.do_predict_on_split}) "
+        if training_args.do_predict
+        else ""
+    )
     run_name += model_args.model_name_or_path
     if "WANDB_NAME" in os.environ:
         run_name = os.getenv("WANDB_NAME")
