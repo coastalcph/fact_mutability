@@ -153,7 +153,7 @@ def inference(dataset, tokenizer, model, args):
 
 def main(args):
     print("Loading model")
-    if "alpaca" in args.model_name_or_path:
+    if "alpaca" in args.model_name_or_path or "llama" in args.model_name_or_path:
         # the fact tokenizer causes issues with protobuf and tokenizers libraries
         tokenizer = AutoTokenizer.from_pretrained(
             args.model_name_or_path, use_fast=False
