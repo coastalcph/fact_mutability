@@ -26,7 +26,10 @@ def evaluate(data, predictions, target_mode, prediction_mode):
         qa_predictions.append({"prediction_text": prediction["answer"], "id": query.id})
 
     print("Evaluating on {} datapoints".format(len(qa_targets)))
-    return compute_score(predictions=qa_predictions, references=qa_targets)
+    return {
+        "n_datapoints": len(qa_targets),
+        **compute_score(predictions=qa_predictions, references=qa_targets),
+    }
 
 
 def main(args):
@@ -45,7 +48,7 @@ def main(args):
     predictions = load_predictions(args.predictions_path)
     df, scores = evaluate(data, predictions, args.target_mode, args.prediction_mode)
     df.to_json(os.path.join(experiment_dir, "results_per_example.json"))
-    wandb.log(scores)
+    wandb.log({k: v for k, v in scores.items() if not isinstance(v, list)})
     print("F1: ", scores["ave_f1"])
 
 

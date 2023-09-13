@@ -8,6 +8,7 @@ def build_dataset(data_paths, dataset=None, split=None):
     queries = dict()
     queries_obj = Queries()
 
+    # We can use the probing classifier dataset to get the LAMA groundtruth.
     if dataset:
         dataset_split = load_dataset(dataset, use_auth_token=True)[split]
         for data in dataset_split:
@@ -25,6 +26,8 @@ def build_dataset(data_paths, dataset=None, split=None):
                 for answer in data["answers"]:
                     queries[query_id]["answers"].append((answer, year, "no_obj_uri"))
 
+    # Note that if the data_paths contain some of the data in the dataset we
+    # will override it and use the groundtruth from the datapaths instead.
     for data_path in data_paths:
         for line in open(data_path):
             data = json.loads(line)
@@ -60,15 +63,17 @@ def load_predictions(data_path):
         for line in fhandle:
             data = json.loads(line)
             qcode = data["qcode"]
-            qcode_split = qcode.split("_")
-            if len(qcode_split) > 2:
+            # Some of the TempLAMA examples contain more than one subject qcode
+            # even though the subjects are written the same and therefore the
+            # query is the same. When preprocessing the data we added a '-' to
+            # include both qcodes. But we should only count one in the evaluation.
+            qcode_split = qcode.split("-")
+            if len(qcode_split) > 1:
                 print(
                     "The prediction contains 3 elements in the qcode ({}), using"
-                    " only the first: {}_{}".format(
-                        qcode, qcode_split[0], qcode_split[-1]
-                    )
+                    " only the first: {}".format(qcode, qcode_split[-1])
                 )
-                qcode = "{}_{}".join(qcode_split[0], qcode_split[-1])
+                qcode = qcode_split[-1]
             del data["qcode"]
             non_empty_predictions = []
             for p in data["predictions"]:
