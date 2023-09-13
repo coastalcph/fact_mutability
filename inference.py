@@ -227,8 +227,8 @@ if __name__ == "__main__":
 
     project_name = "lm_mutability_preds_eval"
     wandb.init(
-        project="(inference) " + project_name,
-        name=args.exp_name,
+        project=project_name,
+        name="(inference) " + args.exp_name,
         config=args,
     )
 
