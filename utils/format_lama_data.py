@@ -4,6 +4,7 @@ import os
 DATA_PATH = 'data/lama/TREx' 
 templates = open('data/lama/relations.jsonl', 'r')
 
+queries = []
 for line in templates:
     line = json.loads(line)
     relation = line['relation']
@@ -14,7 +15,6 @@ for line in templates:
         continue
     if relation in ['P39', 'P108']:
         continue
-    queries = []
     try:
         f = open(os.path.join(DATA_PATH, '{}.jsonl'.format(relation)))
     except:
