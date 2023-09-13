@@ -1,15 +1,16 @@
 import argparse
 import json
-from tqdm import tqdm
 import os
-import numpy as np
 
+import numpy as np
 import torch
+import wandb
+from tqdm import tqdm
 from transformers import (
-    AutoTokenizer,
     AutoModelForCausalLM,
-    GenerationConfig,
     AutoModelForSeq2SeqLM,
+    AutoTokenizer,
+    GenerationConfig,
     LlamaTokenizer,
     T5TokenizerFast,
 )
@@ -223,5 +224,12 @@ if __name__ == "__main__":
         help="Model name or path",
     )
     args = parser.parse_args()
+
+    project_name = "lm_mutability_preds_eval"
+    wandb.init(
+        project="(inference) " + project_name,
+        name=args.exp_name,
+        config=args,
+    )
 
     main(args)
