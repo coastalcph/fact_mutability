@@ -58,10 +58,16 @@ get_sequence = {
     T5TokenizerFast: lambda seq, _: seq.cpu().tolist()[1:],
 }
 ids_to_ignore = {
-    # Ignore BOS, EOS and fullstop.
-    LlamaTokenizer: [1, 2, 29889],
-    # Ignore EOS and fullstop
-    T5TokenizerFast: [1, 5],
+    # Ignore BOS, EOS.
+    LlamaTokenizer: [1, 2],
+    # Ignore EOS.
+    T5TokenizerFast: [1],
+}
+# Token id of a full stop when not at the beggining of a word so it could be
+# different than tokenizer.tokens_to_ids(tokenizer.tokenize('.')).
+full_stop = {
+    LlamaTokenizer: 29889,
+    T5TokenizerFast: 5,
 }
 
 
@@ -69,15 +75,16 @@ def get_scores(model_output, input_ids, prompt, query, tokenizer):
     """Assumes num_beam=1. Gets the token scores for every token that is not BOS, EOS or fullstop,
     gets the first non-the token score and computes pplx."""
     sequence = get_sequence[type(tokenizer)](model_output["sequences"][0], input_ids)
-    trimmed_sequence = [
-        idx for idx in sequence if idx not in ids_to_ignore[type(tokenizer)]
-    ]
     assert len(sequence) == len(model_output["scores"])
-    token_scores = [
-        torch.softmax(score, 1)[:, idx].cpu().item()
-        for idx, score in zip(sequence, model_output["scores"])
-        if idx not in ids_to_ignore[type(tokenizer)]
-    ]
+    token_scores = []
+    trimmed_sequence = []
+    for idx, score in zip(sequence, model_output["scores"]):
+        if idx not in ids_to_ignore[type(tokenizer)]:
+            token_scores.append(torch.softmax(score, 1)[:, idx].cpu().item())
+            trimmed_sequence.append(idx)
+    if trimmed_sequence[-1] == full_stop[type(tokenizer)]:
+        token_scores = token_scores[:-1]
+        trimmed_sequence = trimmed_sequence[:-1]
     answer = tokenizer.decode(trimmed_sequence)
     first_token_score = (
         token_scores[0]
