@@ -10,13 +10,14 @@ from utils.f1_score import compute_score
 def evaluate(data, predictions, target_mode, prediction_mode):
     # compute F1 as max across any alias for any answer for the most recent, most frequent, or specific-year answer
     qa_targets, qa_predictions = [], []
-    for query in data:
+    for qcode in predictions.keys():
+        query = data[qcode]
         target = query.get_relevant_target(target_mode)
         if target is None:
             continue
         prediction = get_prediction(predictions, query.id, prediction_mode)
         if not len(prediction["answer"]):
-            continue
+            print("Warning: the prediction for qcode={} was empty.".format(qcode))
         qa_targets.append(
             {
                 "answers": {"answer_start": [0] * len(target), "text": target},
