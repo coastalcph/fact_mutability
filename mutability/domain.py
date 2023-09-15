@@ -120,9 +120,13 @@ class Queries:
             return self.queries[id]
         else:
             raise IndexError(f'Query "{id}" does not exists in dataset')
-
+    
+    def __len__(self) -> int:
+        return len(self.queries)
+        
     def plot_ratios(self):
         ratios = [q.get_ratio() for q in self]
-        plt.hist(ratios)
+        hist = plt.hist(ratios)
+        print(hist)
         plt.show()
 
