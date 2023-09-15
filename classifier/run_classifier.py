@@ -148,7 +148,9 @@ class LlamaForSequenceClassificationPerLayer(LlamaPreTrainedModel):
             )
         # hidden_states = transformer_outputs[0]
         hidden_states = transformer_outputs.hidden_states[self.hidden_states_from_layer]
-        transformer_outputs.hidden_states = None  # TODO: check this is what we want, trying for OOM
+        transformer_outputs.hidden_states = (
+            None  # TODO: check this is what we want, trying for OOM
+        )
         logits = self.score(hidden_states)
 
         if input_ids is not None:
@@ -233,6 +235,25 @@ def compute_metrics(eval_pred):
     }
 
 
+def init_wandb(model_args, data_args, training_args):
+    project_name = "mutability_classifier"
+    if "WANDB_PROJECT" in os.environ:
+        project_name = os.getenv("WANDB_PROJECT")
+    run_name = (
+        f"(predict-{training_args.do_predict_on_split}) "
+        if training_args.do_predict
+        else ""
+    )
+    run_name += model_args.model_name_or_path
+    if "WANDB_NAME" in os.environ:
+        run_name = os.getenv("WANDB_NAME")
+    wandb.init(
+        project=project_name,
+        name=run_name,
+        config={**asdict(model_args), **asdict(data_args), **asdict(training_args)},
+    )
+
+
 def main(device):
     parser = HfArgumentParser(
         (ModelArguments, DataTrainingArguments, CustomTrainingArguments)
@@ -246,31 +267,23 @@ def main(device):
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
-    project_name = "mutability_classifier"
-    if "WANDB_PROJECT" in os.environ:
-        project_name = os.getenv("WANDB_PROJECT")
-    run_name = "(predict) " if training_args.do_predict else ""
-    run_name += model_args.model_name_or_path
-    if "WANDB_NAME" in os.environ:
-        run_name = os.getenv("WANDB_NAME")
-    wandb.init(
-        project=project_name,
-        name=run_name,
-        config={**asdict(model_args), **asdict(data_args), **asdict(training_args)},
-    )
-
     os.makedirs(training_args.output_dir, exist_ok=True)
     if "/" in model_args.model_name_or_path:
         name_path = model_args.model_name_or_path.split("/")
         model_name_for_file = "_".join(name_path[-max(3, len(name_path)) :])
     dirname = "_".join(
         [
-            model_name_for_file, f"hs_{model_args.train_classifier_from_layer}",
+            model_name_for_file,
+            f"hs_{model_args.train_classifier_from_layer}"
+            if training_args.do_train
+            else training_args.do_predict_on_split,
             "{:%d%h_%H%M}".format(datetime.today()),
         ]
     )
     training_args.output_dir = os.path.join(training_args.output_dir, dirname)
     os.makedirs(training_args.output_dir)
+
+    init_wandb(model_args, data_args, training_args)
 
     tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
     ds = load_dataset(data_args.dataset_name, use_auth_token=True)
