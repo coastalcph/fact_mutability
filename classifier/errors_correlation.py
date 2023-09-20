@@ -55,14 +55,15 @@ def main(args):
     )
     check_ds_examples_match(lm_preds, clf_df)
     df = pd.merge(lm_preds, clf_df, on="id")
-    corrs = {}
+    metrics = {}
+    metrics["clf_acc"] = df.clf_correct.mean()
     for k1, k2 in [("f1", "clf_label_pred"), ("f1", "clf_correct")]:
         corr = pearsonr(df[k1].values, df[k2].values)
         print(f"Pearson {k1}-{k2}", corr)
-        corrs.update(
+        metrics.update(
             {f"corr/{k1}-{k2}": corr.statistic, f"pvalue/{k1}-{k2}": corr.pvalue}
         )
-    wandb.log(corrs)
+    wandb.log(metrics)
 
 
 if __name__ == "__main__":
