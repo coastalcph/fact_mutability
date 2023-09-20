@@ -48,13 +48,13 @@ def main(args):
                 )
             )
     clf_df = pd.DataFrame(
-        clf_data, columns=["id", "clf_pred", "clf_prob", "is_mutable", "relation"]
+        clf_data, columns=["id", "clf_label_pred", "clf_prob", "is_mutable", "relation"]
     )
-    clf_df["clf_wrong"] = clf_df["clf_pred"] != clf_df["is_mutable"]
+    clf_df["clf_correct"] = (clf_df["clf_pred"] == clf_df["is_mutable"]).astype(int)
     check_ds_examples_match(lm_preds, clf_df)
     df = pd.merge(lm_preds, clf_df, on="id")
     corrs = {}
-    for k1, k2 in [("f1", "clf_pred"), ("f1", "clf_wrong"), ("f1", "clf_prob")]:
+    for k1, k2 in [("f1", "clf_label_pred"), ("f1", "clf_correct")]:
         corr = pearsonr(df[k1].values, df[k2].values)
         print(f"Pearson {k1}-{k2}", corr)
         corrs.update(
