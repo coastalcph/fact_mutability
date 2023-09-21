@@ -35,10 +35,11 @@ from transformers import (
     HfArgumentParser,
     Trainer,
     TrainingArguments,
+    AutoModelForSeq2SeqLM,
 )
 from models import (
     LlamaForSequenceClassificationPerLayer,
-    T5ForSequenceClassificationPerLayer,
+    T5HiddenStatesClassifier,
 )
 
 logger = logging.getLogger(__name__)
@@ -87,10 +88,14 @@ class ModelArguments:
     train_classifier_from_layer: int = field(default=-1)
 
 
-def replace_subject(tokenizer, example):
+def replace_subject(model_name, tokenizer, example):
     text = re.sub(r" \[Y\]\s?\.?$", "", example["template"].strip())
     text = text.replace("[X]", example["subject"]).strip()
-    return tokenizer(text)
+    return_dict = {"text": text}
+    if "t5" in model_name:
+        text = text + " <extra_id_0>"
+        return_dict["labels"] = tokenizer("<extra_id_0>", return_tensors="pt").input_ids
+    return {**return_dict, **tokenizer(text)}
 
 
 def compute_metrics(eval_pred):
@@ -168,14 +173,11 @@ def main(device):
     label2id = {"MUTABLE": 1, "IMMUTABLE": 0}
 
     if "t5" in model_args.model_name_or_path:
-        model = T5ForSequenceClassificationPerLayer.from_pretrained(
-            model_args.model_name_or_path,
-            load_in_8bit=True,
-            device_map="auto",
-            num_labels=2,
-            id2label=id2label,
-            label2id=label2id,
-            hidden_states_from_layer=model_args.train_classifier_from_layer,
+        model = AutoModelForSeq2SeqLM.from_pretrained(
+            model_args.model_name_or_path, load_in_8bit=True, device_map="auto"
+        )
+        model = T5HiddenStatesClassifier(
+            model, model.config.hidden_size, model_args.train_classifier_from_layer
         ).to(device)
     else:
         model = LlamaForSequenceClassificationPerLayer.from_pretrained(
