@@ -58,7 +58,7 @@ def get_obj_sitelink_count(objs):
             )
             logging.warning("Ignored exception: {}".format(e))
         answer = json.loads(answer.content)
-        objs_and_count.append(qcode, len(answer["entities"][qcode]["sitelinks"]))
+        objs_and_count.append((qcode, len(answer["entities"][qcode]["sitelinks"])))
     return sorted(objs_and_count, key=lambda x: x[1], reverse=True)
 
 
@@ -67,9 +67,13 @@ def main(args):
     os.makedirs(args.output_dir, exist_ok=True)
     for relation in tqdm(args.relations, desc="Relations"):
         objs = get_objs(relation, rng, 4000, 4000)
-        objs = get_obj_sitelink_count(objs)[:1500]
+        objs_and_count = get_obj_sitelink_count(objs)
+        with open(
+            os.path.join(args.output_dir, relation + "_with_counts.json"), "w"
+        ) as f:
+            json.dump(objs_and_count, f)
         with open(os.path.join(args.output_dir, relation + ".json"), "w") as f:
-            json.dump(objs, f)
+            json.dump([i for i, _ in objs_and_count[:1500]], f)
 
 
 if __name__ == "__main__":
