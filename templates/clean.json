@@ -1,0 +1,272 @@
+{
+ "P740": {
+  "templates": [
+   "[X] was founded in [Y].",
+   "[X] was created in [Y].",
+   "[X] was formed in [Y].",
+   "[X] was established in [Y].",
+   "[X] originated in [Y]."
+  ],
+  "description": "location where a group or organization was formed"
+ },
+ "P103": {
+  "templates": [
+   "The native language of [X] is [Y].",
+   "The mother tongue of [X] is [Y].",
+   "[X] natively speaks [Y].",
+   "The primary language of [X] is [Y].",
+   "[X] is a native speaker of [Y]."
+  ],
+  "description": "language or languages a person has learned from early childhood"
+ },
+ "P19": {
+  "templates": [
+   "[X] was born in [Y].",
+   "[X] is originally from [Y].",
+   "[X] is native to [Y].",
+   "[X] originated in [Y].",
+   "[X] entered this world in [Y]."
+  ],
+  "description": "most specific known (e.g. city instead of country, or hospital instead of city) birth location of a person, animal or fictional character"
+ },
+ "P20": {
+  "templates": [
+   "[X] died in [Y].",
+   "[X] passed away in [Y].",
+   "[X] lost their life at [Y].",
+   "[X]'s life ended in [Y].",
+   "[X] succumbed at [Y]."
+  ],
+  "description": "most specific known (e.g. city instead of country, or hospital instead of city) death location of a person, animal or fictional character"
+ },
+ "P30": {
+  "templates": [
+   "[X] is located in the continent [Y].",
+   "[X] can be found in the continent of [Y].",
+   "[X] is situated within the continent of [Y].",
+   "[X] belongs to the continent of [Y].",
+   "[X] lies on the continent of [Y]."
+  ],
+  "description": "continent of which the subject is a part"
+ },
+ "P36": {
+  "templates": [
+   "The capital city of [X] is [Y].",
+   "[X]'s capital city is [Y].",
+   "[X], whose the capital city is [Y].",
+   "[X] is governed from the capital city of [Y].",
+   "[X] with capital city in [Y]."
+  ],
+  "description": "primary city of a country, state or other type of administrative territorial entity"
+ },
+ "P159": {
+  "templates": [
+   "The headquarters of [X] is in [Y] .",
+   "[X]'s main office is located in [Y].",
+   "The central office for [X] is situated in [Y].",
+   "The headquarters of [X] is located in [Y] .",
+   "[X] has its headquarters in [Y]."
+  ],
+  "description": "specific location where an organization's headquarters is or has been situated. Inverse property of \"occupant\" (P466)."
+ },
+ "P449": {
+  "templates": [
+   "[X] premiered on [Y].",
+   "[X] was originally aired on [Y].",
+   "[X] had its inaugural broadcast on [Y].",
+   "[X] was first broadcast on [Y].",
+   "[X] first aired on [Y]."
+  ],
+  "description": "network(s) the radio or television show was originally aired on,  including"
+ },
+ "P364": {
+  "templates": [
+   "The original language of work of [X] is [Y].",
+   "[X] was originally written in [Y].",
+   "The language of [X] is [Y].",
+   "[X] was originally drafted in [Y].",
+   "[X] was originally crafted in [Y]."
+  ],
+  "description": "language in which a film or a performance work was originally created. Deprecated for written works; use P407 (\"language of work or name\") instead."
+ },
+ "P495": {
+  "templates": [
+   "[X] was created in [Y].",
+   "[X] originated in [Y].",
+   "[X] was developed in [Y].",
+   "[X] comes from [Y].",
+   "[X] was developed in [Y]."
+  ],
+  "description": "country of origin of this item (creative work, food, phrase, product, etc.)"
+ },
+ "P140": {
+  "templates": [
+   "[X]'s religious affiliation is [Y].",
+   "[X] adheres to the belief system of [Y].",
+   "[X] follows the faith of [Y].",
+   "[X] is affiliated with the religious tradition of [Y].",
+   "[X] is a follower of [Y]."
+  ],
+  "description": "religion of a person, organization or religious building, or associated with this subject"
+ },
+ "P138": {
+  "templates": [
+   "[X] is named after [Y].",
+   "[X]'s name is inspired by [Y].",
+   "[X] derives its name from [Y].",
+   "[X] is named in honor of [Y].",
+   "[X] is called after [Y]."
+  ],
+  "description": "entity or event that inspired the subject's name, or namesake (in at least one language)"
+ },
+ "P47": {
+  "templates": [
+   "[X] shares border with [Y].",
+   "[X] shares a common border with [Y].",
+   "[X] borders with [Y].",
+   "[X] is on the border of [Y].",
+   "[X] is neighboring [Y]."
+  ],
+  "description": "countries or administrative subdivisions, of equal level, that this item borders, either by land or water"
+ },
+ "P136": {
+  "templates": [
+   "The creative work's genre of [X] is [Y].",
+   "[X] falls into the genre of [Y].",
+   "The genre of [X] is [Y].",
+   "The creative piece [X] belongs to the genre of [Y].",
+   "For [X], the genre can be described as [Y]."
+  ],
+  "description": "creative work's genre or an artist's field of work (P101). Use main subject (P921) to relate creative works to their topic"
+ },
+ "P937": {
+  "templates": [
+   "[X] used to work in [Y].",
+   "[X]'s work location was in [Y].",
+   "[X] found employment located in [Y].",
+   "[X] was employed in [Y].",
+   "[X] took up work located in [Y]."
+  ],
+  "description": "location where persons were active"
+ },
+ "P108": {
+  "templates": [
+   "[X] works for [Y].",
+   "[X] is employed by [Y].",
+   "[X] is on the payroll of [Y].",
+   "[X] works at [Y].",
+   "[X] holds a position at [Y]."
+  ],
+  "description": "person or organization for which the subject works or worked"
+ },
+ "P488": {
+  "templates": [
+    "The presiding member of [X] is [Y].",
+    "The chairperson of [X] is [Y].",
+    "The person who serves as the head of [X] is [Y].",
+    "The leader of [X] is [Y].",
+    "The person who presides over [X] is [Y]."
+  ],
+  "description": "presiding member of an organization, group or body "
+ },
+ "P286": {
+  "templates": [
+    "The head coach of [X] is [Y].",
+    "The chief coach of [X] is [Y].",
+    "The person who serves as the head coach for [X] is [Y].",
+    "The person who assumes the role of head coach for [X] is [Y].",
+    "The person who holds the position of head coach of [X] is [Y]."
+  ],
+  "description": "on-field manager or head coach of a sports club (not to be confused with a general manager P505, which is not a coaching position) or person"
+ },
+ "P6": {
+  "templates": [
+    "The head of the government of [X] is [Y].",
+    "The leader of the government of [X] is [Y].",
+    "The person in charge of the government of [X] is [Y].",
+    "The person who presides over the government of [X] is [Y].",
+    "The person who governs [X] is [Y]."
+  ],
+  "description": "head of the executive power of this town, city, municipality, state, country, or other governmental body"
+ },
+ "P39": {
+  "templates": [
+   "[X] has the position of [Y].",
+   "[X] occupies the role of [Y].",
+   "[X] holds the position of [Y].",
+   "[X] works as [Y].",
+   "[X] has the job title of [Y]."
+  ],
+  "description": "subject currently or formerly holds the object position or public office"
+ },
+ "P54": {
+  "templates": [
+   "[X] plays with [Y].",
+   "[X] is a sport team member of [Y].",
+   "[X] is part of the sports roster for [Y].",
+   "[X] competes in sports for [Y].",
+   "[X] is a team member representing [Y]."
+  ],
+  "description": "sports teams or clubs that the subject currently represents or formerly represented"
+ },
+ "P264": {
+  "templates": [
+   "[X] is represented by the music label [Y].",
+   "[X]'s record label is [Y].",
+   "[X]'s music label is [Y].",
+   "[X] as their record label represented by [Y].",
+   "[X] has signed with as their record label [Y]."
+  ],
+  "description": "brand and trademark associated with the marketing of subject music recordings and music videos"
+ },
+ "P551": {
+  "templates": [
+    "[X] place of residence is located in [Y].",
+    "[X] resides in [Y].",
+    "[X] makes its residence in [Y].",
+    "[X] takes up residence in [Y].",
+    "[X] lives in [Y]."
+  ],
+  "description": "the place where the person is or has been, resident"
+ },
+ "P451": {
+  "templates": [
+    "[X] is in a relationship with [Y].",
+    "[X] is romantically involved with [Y].",
+    "[X] is dating with [Y].",
+    "[X] is in a romantic relationship with [Y].",
+    "[X] is romantically intertwined with [Y]."
+  ],
+  "description": "someone with whom the person is in a relationship without being married. Use 'spouse' (P26) for married couples"
+ },
+ "P1308": {
+  "templates": [
+    "[X] is held by [Y].",
+    "[X] is under the control of [Y].",
+    "[X] is subject to the command of [Y].",
+    "[X] complies with the instructions of [Y].",
+    "[X] is subordinate to [Y]."
+  ],
+  "description": "persons who hold and/or held an office or noble title"
+ },
+ "P210": {
+  "templates": [
+    "The party chief of [X] is [Y].",
+    "[X]'s party is headed by [Y].",
+    "The chief representative of [X] is [Y].",
+    "The chief ambassador of [X] is [Y].",
+    "The leading advocate for [X] is [Y]."
+  ],
+  "description": "chief representative of a party in an institution or an administrative unit (use qualifier to identify the party)"
+ },
+ "P1037": {
+  "templates": [
+    "The director of [X] is [Y].",
+    "The manager of [X] is [Y].",
+    "[X] is managed by [Y].",
+    "[X] is lead by [Y].",
+    "The position of manager for [X] is held by [Y]."
+  ],
+  "description": "person who manages any kind of group"
+ }
+}
