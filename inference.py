@@ -83,7 +83,8 @@ def get_scores(model_output, input_ids, prompt, query, tokenizer):
         if idx not in ids_to_ignore[type(tokenizer)]:
             token_scores.append(torch.softmax(score, 1)[:, idx].cpu().item())
             trimmed_sequence.append(idx)
-    if not trimmed_sequence:
+    words = answer.split()
+    if not trimmed_sequence or (len(words) == 1 and words[0] in ["the", "a", "an"]):
         print(
             "Warning: Empty generation. input_ids={}, output_sequence={}".format(
                 input_ids, sequence
@@ -95,9 +96,7 @@ def get_scores(model_output, input_ids, prompt, query, tokenizer):
         trimmed_sequence = trimmed_sequence[:-1]
     answer = tokenizer.decode(trimmed_sequence)
     first_token_score = (
-        token_scores[0]
-        if not answer.split()[0] in ["the", "a", "an"]
-        else token_scores[1]
+        token_scores[1] if words[0] in ["the", "a", "an"] else token_scores[0]
     )
     perplexity = np.exp(-np.mean(np.log(token_scores)))
 
