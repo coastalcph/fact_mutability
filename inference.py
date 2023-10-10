@@ -83,7 +83,7 @@ def get_scores(model_output, input_ids, prompt, query, tokenizer):
         if idx not in ids_to_ignore[type(tokenizer)]:
             token_scores.append(torch.softmax(score, 1)[:, idx].cpu().item())
             trimmed_sequence.append(idx)
-    if trimmed_sequence[-1] == full_stop[type(tokenizer)]:
+    if trimmed_sequence and trimmed_sequence[-1] == full_stop[type(tokenizer)]:
         token_scores = token_scores[:-1]
         trimmed_sequence = trimmed_sequence[:-1]
     answer = tokenizer.decode(trimmed_sequence)
