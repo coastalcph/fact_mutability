@@ -28,7 +28,7 @@ TEMPLATES = {
     "query_in_response": (
         "Below is an instruction that describes a task. "
         "Write a response that appropriately completes the request.\n\n"
-        "### Instruction:\n{}\n\n### Response:{}"
+        "### Instruction:\n{}\n\n### Response: {}"
     ),
     "query_in_input": (
         "Below is an instruction that describes a task. "
