@@ -158,6 +158,12 @@ def inference(dataset, tokenizer, model, args):
 
 
 def main(args):
+    experiment_name = "{}--{}".format(
+        args.exp_name, args.model_name_or_path.replace("/", "-")
+    )
+    experiment_dir = os.path.join(args.output_dir, experiment_name)
+    os.makedirs(experiment_dir, exist_ok=True)
+
     print("Loading model")
     if "alpaca" in args.model_name_or_path or "llama" in args.model_name_or_path:
         # the fact tokenizer causes issues with protobuf and tokenizers libraries
@@ -181,12 +187,6 @@ def main(args):
     outputs = inference(dataset, tokenizer, model, args)
 
     print("Writing outputs")
-    experiment_name = "{}--{}".format(
-        args.exp_name, args.model_name_or_path.replace("/", "-")
-    )
-    experiment_dir = os.path.join(args.output_dir, experiment_name)
-    if not os.path.exists(experiment_dir):
-        os.mkdir(experiment_dir)
     for key in outputs:
         with open(os.path.join(experiment_dir, key + ".json"), "w") as outfile:
             for i, item in enumerate(outputs[key]):
