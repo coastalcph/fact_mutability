@@ -209,8 +209,8 @@ def main(device):
         args=training_args,
         train_dataset=tokenized_ds["train_portion_to_train"],
         eval_dataset={
-            "val": tokenized_ds["validation"],
             "online_portion": tokenized_ds["train_portion_to_eval"],
+            "val": tokenized_ds["validation"],
         },
         tokenizer=tokenizer,
         data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
