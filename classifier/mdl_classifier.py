@@ -73,7 +73,7 @@ class DataTrainingArguments:
     portion_sizes: List[float]
     portion_idx: int
     dataset_name: Optional[str] = field(
-        default="cfierro/mutability_classifier_data",
+        default="coastalcph/fm_queries_classifier",
         metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
     random_labels_per_relation: Optional[bool] = field(default=False)
@@ -89,8 +89,8 @@ class ModelArguments:
 
 
 def replace_subject(tokenizer, example):
-    text = re.sub(r" \[Y\]\s?\.?$", "", example["template"].strip())
-    text = text.replace("[X]", example["subject"]).strip()
+    query = example["query"].replace("_X_ .", "_X_.")
+    text = query.replace("_X_.", example["answer"][0]["name"]).strip()
     return tokenizer(text)
 
 
