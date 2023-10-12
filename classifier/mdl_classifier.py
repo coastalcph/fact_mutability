@@ -191,6 +191,8 @@ def main(device):
         print("New random labels:", new_labels)
         ds = ds.map(lambda example: {"label": new_labels[example["relation"]]})
 
+    # TODO: this filtering should be removed when the dataset is fixed.
+    ds = ds.filter(lambda ex: len(ex["answer"]) > 0)
     tokenized_ds = ds.map(partial(replace_subject, tokenizer))
     print("Example of training example:", tokenized_ds["train"][0])
     print("Loading model")
