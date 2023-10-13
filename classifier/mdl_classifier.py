@@ -186,7 +186,10 @@ def main(device):
         old_labels = {
             r: l for r, l in zip(ds["train"]["relation"], ds["train"]["label"])
         }
-        relations += list(OrderedDict.fromkeys(ds["validation"]["relation"]))
+        # TODO: should we update the validation to random?
+        relations += sorted(
+            [r for s in ds.keys() if s != "train" for r in set(ds[s]["relation"])]
+        )
         new_labels = {
             relations[i]: label
             for i, label in enumerate(rng.integers(0, 2, len(relations)))
