@@ -183,12 +183,23 @@ def main(device):
         rng = np.random.default_rng(training_args.seed)
         # Using an OrderedDict so we can have the same order each time.
         relations = list(OrderedDict.fromkeys(ds["train"]["relation"]))
+        old_labels = {
+            r: l for r, l in zip(ds["train"]["relation"], ds["train"]["label"])
+        }
         relations += list(OrderedDict.fromkeys(ds["validation"]["relation"]))
         new_labels = {
             relations[i]: label
             for i, label in enumerate(rng.integers(0, 2, len(relations)))
         }
-        print("New random labels:", new_labels)
+        changed_train_labels = sum(
+            [int(new_labels[r] != l) for r, l in old_labels.items()]
+        )
+        print(
+            "New random labels (changed={}): {}".format(
+                changed_train_labels, new_labels
+            )
+        )
+        assert changed_train_labels > 0
         ds = ds.map(lambda example: {"label": new_labels[example["relation"]]})
 
     # TODO: this filtering should be removed when the dataset is fixed.
