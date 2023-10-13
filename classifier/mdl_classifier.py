@@ -199,6 +199,7 @@ def main(device):
                 changed_train_labels, new_labels
             )
         )
+        print("Old train labels:", old_labels)
         assert changed_train_labels > 0
         ds = ds.map(lambda example: {"label": new_labels[example["relation"]]})
 
