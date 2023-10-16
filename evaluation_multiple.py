@@ -9,12 +9,18 @@ from utils.f1_score import compute_score
 from utils.data_handling import *
 
 
-def evaluate(data, predictions, target_mode, prediction_mode):
+def evaluate(data, predictions, target_mode, prediction_mode, aliases):
     # compute F1 as max across any alias for any answer for the most recent, most frequent, or specific-year answer
     qa_targets, qa_predictions = defaultdict(list), defaultdict(list)
     for query_id, query in data.items():
         relation = query['relation']
-        target = [a['name'] for a in query['answer']]
+        # target = [a['name'] for a in query['answer']]
+        target = list()
+        for answer in query['answer']:
+            if answer['wikidata_id'] in aliases:
+                answer_aliases = aliases[answer['wikidata_id']]
+                target += answer_aliases
+            target.append(answer['name'])
         if target is None:
             continue
         prediction = get_prediction(predictions, query_id, prediction_mode)
@@ -54,7 +60,8 @@ def load_queries(data_path):
 def main(args):
     data = load_queries(args.data_path)
     predictions = load_predictions(args.predictions_path)
-    for rel, score in evaluate(data, predictions, args.target_mode, args.prediction_mode):
+    aliases = json.load(open('./data/objects_with_aliases.json'))
+    for rel, score in evaluate(data, predictions, args.target_mode, args.prediction_mode, aliases):
         print(rel, score['ave_f1'])
 
 
