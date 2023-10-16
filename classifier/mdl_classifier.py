@@ -184,7 +184,8 @@ def main(device):
         # Using an OrderedDict so we can have the same order each time.
         relations = list(OrderedDict.fromkeys(ds["train"]["relation"]))
         old_labels = {
-            r: l for r, l in zip(ds["train"]["relation"], ds["train"]["label"])
+            split: {r: l for r, l in zip(ds[split]["relation"], ds[split]["label"])}
+            for split in ds.keys()
         }
         # TODO: should we update the validation to random?
         relations += sorted(
@@ -194,16 +195,15 @@ def main(device):
             relations[i]: label
             for i, label in enumerate(rng.integers(0, 2, len(relations)))
         }
-        changed_train_labels = sum(
-            [int(new_labels[r] != l) for r, l in old_labels.items()]
-        )
-        print(
-            "New random labels (changed={}): {}".format(
-                changed_train_labels, new_labels
+        for split in ds.keys():
+            changed_labels = sum(
+                [int(new_labels[r] != l) for r, l in old_labels[split].items()]
             )
-        )
-        print("Old train labels:", old_labels)
-        assert changed_train_labels > 0
+            print(
+                "New random labels (changed={}): {}".format(changed_labels, new_labels)
+            )
+            print("Old labels:", old_labels[split])
+            assert split != "train" or changed_labels > 0
         ds = ds.map(lambda example: {"label": new_labels[example["relation"]]})
 
     # TODO: this filtering should be removed when the dataset is fixed.
