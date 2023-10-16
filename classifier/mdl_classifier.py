@@ -157,6 +157,7 @@ def main(device):
 
     tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
     ds = load_dataset(data_args.dataset_name, use_auth_token=True)
+    ds.pop("all_fm")
     ds = ds.rename_column("is_mutable", "label").shuffle(seed=training_args.seed)
     portion_indices = [
         int(portion_size * 0.01 * len(ds["train"]))
@@ -195,14 +196,16 @@ def main(device):
             relations[i]: label
             for i, label in enumerate(rng.integers(0, 2, len(relations)))
         }
+        print("New labels:", new_labels)
         for split in ds.keys():
             changed_labels = sum(
                 [int(new_labels[r] != l) for r, l in old_labels[split].items()]
             )
             print(
-                "New random labels (changed={}): {}".format(changed_labels, new_labels)
+                "Old labels {} (changed={}):".format(
+                    split, changed_labels, old_labels[split]
+                )
             )
-            print("Old labels:", old_labels[split])
             assert split != "train" or changed_labels > 0
         ds = ds.map(lambda example: {"label": new_labels[example["relation"]]})
 
