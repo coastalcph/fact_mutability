@@ -25,6 +25,7 @@ def evaluate(data, predictions, target_mode, prediction_mode):
         qa_predictions.append({"prediction_text": prediction["answer"], "id": query.id})
 
     print("Evaluating on {} datapoints".format(len(qa_targets)))
+    import pdb; pdb.set_trace()
     return compute_score(predictions=qa_predictions, references=qa_targets)
 
 

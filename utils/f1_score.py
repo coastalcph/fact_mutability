@@ -60,12 +60,18 @@ def _compute(dataset, predictions):
             for qa in paragraph["qas"]:
                 if qa["id"] not in predictions:
                     message = "Unanswered question " + qa["id"] + " will receive score 0."
-                    print(message, file=sys.stderr)
+                    print(message)
                     continue
                 ground_truths = list(map(lambda x: x["text"], qa["answers"]))
                 prediction = predictions[qa["id"]]
-                exact_match.append(metric_max_over_ground_truths(exact_match_score, prediction, ground_truths))
-                f1.append(metric_max_over_ground_truths(f1_score, prediction, ground_truths))
+                em_score = metric_max_over_ground_truths(exact_match_score, prediction, ground_truths)
+                exact_match.append(em_score)
+                f_score = metric_max_over_ground_truths(f1_score, prediction, ground_truths)
+                # if f_score > 0:
+                #     print(f_score)
+                #     print(ground_truths)
+                #     print(prediction)
+                f1.append(f_score)
 
     ave_exact_match = 100.0 * sum(exact_match) / len(exact_match)
     ave_f1 = 100.0 * sum(f1) / len(f1)
