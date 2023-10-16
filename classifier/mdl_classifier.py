@@ -226,7 +226,7 @@ def main(device):
         args=training_args,
         train_dataset=tokenized_ds["train_portion_to_train"],
         eval_dataset={
-            "online_portion": tokenized_ds["train_portion_to_eval"],
+            # "online_portion": tokenized_ds["train_portion_to_eval"],
             "val": tokenized_ds["validation"],
         },
         tokenizer=tokenizer,
@@ -266,10 +266,10 @@ def main(device):
         trainer.log_metrics("online_portion", metrics)
         trainer.save_metrics("online_portion", metrics)
 
-        metrics = trainer.evaluate(eval_dataset=tokenized_ds["train"])
-        metrics["train_samples"] = len(tokenized_ds["train"])
-        trainer.log_metrics("train", metrics)
-        trainer.save_metrics("train", metrics)
+        metrics = trainer.evaluate(eval_dataset=tokenized_ds["test"])
+        metrics["test_samples"] = len(tokenized_ds["test"])
+        trainer.log_metrics("test", metrics)
+        trainer.save_metrics("test", metrics)
 
 
 if __name__ == "__main__":
