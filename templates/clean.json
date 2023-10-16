@@ -1,11 +1,11 @@
 {
  "P740": {
   "templates": [
-   "[X] was founded in [Y].",
-   "[X] was created in [Y].",
-   "[X] was formed in [Y].",
-   "[X] was established in [Y].",
-   "[X] originated in [Y]."
+   "[X] was founded in the location of [Y].",
+   "[X] was created in the location of [Y].",
+   "[X] was formed in the location of [Y].",
+   "[X] was established in the location of [Y].",
+   "[X] originated in the location of [Y]."
   ],
   "description": "location where a group or organization was formed"
  },
@@ -21,20 +21,20 @@
  },
  "P19": {
   "templates": [
-   "[X] was born in [Y].",
+   "[X] was born in the location of [Y].",
    "[X] is originally from [Y].",
    "[X] is native to [Y].",
-   "[X] originated in [Y].",
-   "[X] entered this world in [Y]."
+   "[X] originated in the location of [Y].",
+   "[X] entered this world in the location of [Y]."
   ],
   "description": "most specific known (e.g. city instead of country, or hospital instead of city) birth location of a person, animal or fictional character"
  },
  "P20": {
   "templates": [
-   "[X] died in [Y].",
-   "[X] passed away in [Y].",
+   "[X] died in the location of [Y].",
+   "[X] passed away in the location of [Y].",
    "[X] lost their life at [Y].",
-   "[X]'s life ended in [Y].",
+   "[X]'s life ended in the location of [Y].",
    "[X] succumbed at [Y]."
   ],
   "description": "most specific known (e.g. city instead of country, or hospital instead of city) death location of a person, animal or fictional character"
@@ -84,18 +84,18 @@
    "The original language of work of [X] is [Y].",
    "[X] was originally written in [Y].",
    "The language of [X] is [Y].",
-   "[X] was originally drafted in [Y].",
-   "[X] was originally crafted in [Y]."
+   "[X] was originally drafted in the language of [Y].",
+   "[X] was originally crafted in the language of [Y]."
   ],
   "description": "language in which a film or a performance work was originally created. Deprecated for written works; use P407 (\"language of work or name\") instead."
  },
  "P495": {
   "templates": [
-   "[X] was created in [Y].",
-   "[X] originated in [Y].",
-   "[X] was developed in [Y].",
-   "[X] comes from [Y].",
-   "[X] was developed in [Y]."
+   "[X] was created in the country named [Y].",
+   "[X] originated in the country named [Y].",
+   "[X] was developed in the country named [Y].",
+   "[X] comes from the country named [Y].",
+   "[X] was developed in the country named [Y]."
   ],
   "description": "country of origin of this item (creative work, food, phrase, product, etc.)"
  },
@@ -141,10 +141,10 @@
  },
  "P937": {
   "templates": [
-   "[X] used to work in [Y].",
+   "[X] used to work in the location of [Y].",
    "[X]'s work location was in [Y].",
    "[X] found employment located in [Y].",
-   "[X] was employed in [Y].",
+   "[X] was employed in the location of [Y].",
    "[X] took up work located in [Y]."
   ],
   "description": "location where persons were active"
@@ -181,8 +181,8 @@
  },
  "P6": {
   "templates": [
-    "The head of the government of [X] is [Y].",
-    "The leader of the government of [X] is [Y].",
+    "The person at the head of the government of [X] is [Y].",
+    "The person known as the leader of the government of [X] is [Y].",
     "The person in charge of the government of [X] is [Y].",
     "The person who presides over the government of [X] is [Y].",
     "The person who governs [X] is [Y]."
@@ -194,7 +194,7 @@
    "[X] has the position of [Y].",
    "[X] occupies the role of [Y].",
    "[X] holds the position of [Y].",
-   "[X] works as [Y].",
+   "[X] works as a [Y].",
    "[X] has the job title of [Y]."
   ],
   "description": "subject currently or formerly holds the object position or public office"
@@ -242,10 +242,10 @@
  "P1308": {
   "templates": [
     "[X] is held by [Y].",
-    "[X] is under the control of [Y].",
-    "[X] is subject to the command of [Y].",
-    "[X] complies with the instructions of [Y].",
-    "[X] is subordinate to [Y]."
+    "[X] is under the control of the person named [Y].",
+    "[X] is subject to the command of the person named [Y].",
+    "[X] complies with the instructions of the person named [Y].",
+    "[X] is subordinate to the person named [Y]."
   ],
   "description": "persons who hold and/or held an office or noble title"
  },
@@ -263,8 +263,8 @@
   "templates": [
     "The director of [X] is [Y].",
     "The manager of [X] is [Y].",
-    "[X] is managed by [Y].",
-    "[X] is lead by [Y].",
+    "[X] is managed by the person named [Y].",
+    "[X] is lead by the person named [Y].",
     "The position of manager for [X] is held by [Y]."
   ],
   "description": "person who manages any kind of group"
