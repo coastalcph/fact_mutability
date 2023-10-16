@@ -159,26 +159,6 @@ def main(device):
     ds = load_dataset(data_args.dataset_name, use_auth_token=True)
     ds.pop("all_fm")
     ds = ds.rename_column("is_mutable", "label").shuffle(seed=training_args.seed)
-    portion_indices = [
-        int(portion_size * 0.01 * len(ds["train"]))
-        for portion_size in data_args.portion_sizes
-    ]
-    # When there is no next batch to evaluate we evaluate on all the training data.
-    if data_args.portion_idx + 1 < len(portion_indices):
-        ds["train_portion_to_eval"] = ds["train"].select(
-            np.arange(
-                portion_indices[data_args.portion_idx],
-                portion_indices[data_args.portion_idx + 1],
-            )
-        )
-    else:
-        ds["train_portion_to_eval"] = ds["train"]
-    ds["train_portion_to_train"] = ds["train"].select(
-        np.arange(0, portion_indices[data_args.portion_idx])
-    )
-    print("portion_sizes", data_args.portion_sizes)
-    print(f'train_portion_to_train: {len(ds["train_portion_to_train"])}')
-    print(f'train_portion_to_eval: {len(ds["train_portion_to_eval"])}')
 
     if data_args.random_labels_per_relation:
         rng = np.random.default_rng(training_args.seed)
@@ -202,12 +182,33 @@ def main(device):
                 [int(new_labels[r] != l) for r, l in old_labels[split].items()]
             )
             print(
-                "Old labels {} (changed={}):".format(
+                "Old labels {} (changed={}): {}".format(
                     split, changed_labels, old_labels[split]
                 )
             )
             assert split != "train" or changed_labels > 0
         ds = ds.map(lambda example: {"label": new_labels[example["relation"]]})
+
+    portion_indices = [
+        int(portion_size * 0.01 * len(ds["train"]))
+        for portion_size in data_args.portion_sizes
+    ]
+    # When there is no next batch to evaluate we evaluate on all the training data.
+    if data_args.portion_idx + 1 < len(portion_indices):
+        ds["train_portion_to_eval"] = ds["train"].select(
+            np.arange(
+                portion_indices[data_args.portion_idx],
+                portion_indices[data_args.portion_idx + 1],
+            )
+        )
+    else:
+        ds["train_portion_to_eval"] = ds["train"]
+    ds["train_portion_to_train"] = ds["train"].select(
+        np.arange(0, portion_indices[data_args.portion_idx])
+    )
+    print("portion_sizes", data_args.portion_sizes)
+    print(f'train_portion_to_train: {len(ds["train_portion_to_train"])}')
+    print(f'train_portion_to_eval: {len(ds["train_portion_to_eval"])}')
 
     # TODO: this filtering should be removed when the dataset is fixed.
     ds = ds.filter(lambda ex: len(ex["answer"]) > 0)
