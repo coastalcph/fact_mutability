@@ -99,7 +99,7 @@ def compute_metrics(eval_pred):
     precision = evaluate.load("precision")
     prediction_scores, labels = eval_pred
     predictions = np.argmax(prediction_scores, axis=1)
-    exp_pred_scores = np.exp(prediction_scores)
+    exp_pred_scores = np.exp(prediction_scores.astype(np.float64))
     labels_probs = exp_pred_scores[np.arange(len(labels)), labels] / np.sum(
         exp_pred_scores, axis=1
     )
@@ -265,6 +265,7 @@ def main(device):
         trainer.save_model()
         trainer.save_state()
 
+        print("Training done, evlauating model.")
         metrics = trainer.evaluate(eval_dataset=tokenized_ds["train_portion_to_eval"])
         metrics["online_portion_samples"] = len(tokenized_ds["train_portion_to_eval"])
         trainer.log_metrics("online_portion", metrics)
