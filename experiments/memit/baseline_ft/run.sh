@@ -4,7 +4,7 @@
 MODEL_NAME="meta-llama/Llama-2-7b-hf"
 HPARAMS_FN="llama2-7b_wd-1.json"
 # MODEL_NAME="EleutherAI/gpt-j-6B"
-HPARAMS_FN="EleutherAI_gpt-j-6B_wd.json"
+# HPARAMS_FN="EleutherAI_gpt-j-6B_wd.json"
 ALG_NAME="FT"
 DATASET="mcf"  # mcf,cf,zsre
 
