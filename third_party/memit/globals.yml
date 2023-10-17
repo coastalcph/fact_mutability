@@ -1,14 +1,14 @@
 ---
   # Result files
-  RESULTS_DIR: "results"
+  RESULTS_DIR: "/projects/nlp/data/data/fact_mutability/third_party/memit/results"
 
   # Data files
-  DATA_DIR: "data"
-  STATS_DIR: "data/stats"
-  KV_DIR: "/share/projects/rewriting-knowledge/kvs"
+  DATA_DIR: "/projects/nlp/data/data/fact_mutability/third_party/memit/data"
+  STATS_DIR: "/projects/nlp/data/data/fact_mutability/third_party/memit/data/stats"
+  KV_DIR: "/projects/nlp/data/data/fact_mutability/third_party/memit/kvs"
 
   # Hyperparameters
-  HPARAMS_DIR: "hparams"
+  HPARAMS_DIR: "/projects/nlp/data/data/fact_mutability/third_party/memit/hparams"
 
   # Remote URLs
   REMOTE_ROOT_URL: "https://memit.baulab.info"

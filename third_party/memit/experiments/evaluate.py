@@ -89,13 +89,23 @@ def main(
 
     # Instantiate vanilla model
     if type(model_name) is str:
-        print("Instantiating model")
-        model = AutoModelForCausalLM.from_pretrained(model_name).cuda()
+        print(f"Instantiating model {model_name}")
+        # model = AutoModelForCausalLM.from_pretrained(model_name).cuda()
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            device_map="auto",  # auto mode: select precision based on the device
+            offload_folder="/tmp/offload",
+            torch_dtype="auto",
+        )
         tok = AutoTokenizer.from_pretrained(model_name)
         tok.pad_token = tok.eos_token
     else:
         model, tok = model_name
         model_name = model.config._name_or_path
+
+    import pdb
+
+    pdb.set_trace()
 
     # Load data
     print("Loading dataset, attribute snippets, tf-idf data")
@@ -140,7 +150,11 @@ def main(
             if conserve_memory
             else dict()
         )
-        etc_args = dict(cache_template=cache_template) if any(alg in alg_name for alg in ["ROME", "MEMIT"]) else dict()
+        etc_args = (
+            dict(cache_template=cache_template)
+            if any(alg in alg_name for alg in ["ROME", "MEMIT"])
+            else dict()
+        )
 
         start = time()
         edited_model, weights_copy = apply_algo(
@@ -231,7 +245,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--model_name",
-        choices=["gpt2-medium", "gpt2-large", "gpt2-xl", "EleutherAI/gpt-j-6B"],
+        # choices=["gpt2-medium", "gpt2-large", "gpt2-xl", "EleutherAI/gpt-j-6B"],
         default="gpt2-xl",
         help="Model to edit.",
         required=True,
