@@ -51,7 +51,7 @@ def load_queries(data_path):
     with open(data_path) as fhandle:
         for line in fhandle:
             query = json.loads(line)
-            query_id = query['id']
+            query_id = "_".join(query['id'].split("_")[:2])
             if query_id not in queries and len(query['answer']):
                 queries[query_id] = query
     return queries

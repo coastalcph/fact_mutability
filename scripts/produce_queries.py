@@ -30,10 +30,12 @@ def main():
                 }
                 queries[relation].append(query_object)
 
-    for rel, l in queries.items():
-        with open(f"./data/queries/{rel}.jsonl", "w") as fhandle:
-            for q in l:
-                fhandle.write("{}\n".format(json.dumps(q)))
+    with open(f"./data/queries.jsonl", "w") as fhandle_1:
+        for rel, l in queries.items():
+            with open(f"./data/queries/{rel}.jsonl", "w") as fhandle_2:
+                for q in l:
+                    fhandle_1.write("{}\n".format(json.dumps(q)))
+                    fhandle_2.write("{}\n".format(json.dumps(q)))
                 
 if __name__ == '__main__':
     main()
