@@ -73,7 +73,7 @@ class DataTrainingArguments:
     portion_sizes: List[float]
     portion_idx: int
     dataset_name: Optional[str] = field(
-        default="cfierro/mutability_classifier_data",
+        default="coastalcph/fm_queries_classifier",
         metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
     random_labels_per_relation: Optional[bool] = field(default=False)
@@ -89,8 +89,8 @@ class ModelArguments:
 
 
 def replace_subject(tokenizer, example):
-    text = re.sub(r" \[Y\]\s?\.?$", "", example["template"].strip())
-    text = text.replace("[X]", example["subject"]).strip()
+    query = example["query"].replace("_X_ .", "_X_.")
+    text = query.replace("_X_.", example["answer"][0]["name"]).strip()
     return tokenizer(text)
 
 
@@ -99,7 +99,7 @@ def compute_metrics(eval_pred):
     precision = evaluate.load("precision")
     prediction_scores, labels = eval_pred
     predictions = np.argmax(prediction_scores, axis=1)
-    exp_pred_scores = np.exp(prediction_scores)
+    exp_pred_scores = np.exp(prediction_scores.astype(np.float64))
     labels_probs = exp_pred_scores[np.arange(len(labels)), labels] / np.sum(
         exp_pred_scores, axis=1
     )
@@ -157,44 +157,61 @@ def main(device):
 
     tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
     ds = load_dataset(data_args.dataset_name, use_auth_token=True)
-    ds["train"] = (
-        ds["train"]
-        .rename_column("is_mutable", "label")
-        .shuffle(seed=training_args.seed)
-    )
+    ds.pop("all_fm")
+    ds = ds.rename_column("is_mutable", "label").shuffle(seed=training_args.seed)
+
+    if data_args.random_labels_per_relation:
+        rng = np.random.default_rng(training_args.seed)
+        # Using an OrderedDict so we can have the same order each time.
+        relations = list(OrderedDict.fromkeys(ds["train"]["relation"]))
+        old_labels = {
+            split: {r: l for r, l in zip(ds[split]["relation"], ds[split]["label"])}
+            for split in ds.keys()
+        }
+        # TODO: should we update the validation to random?
+        relations += sorted(
+            [r for s in ds.keys() if s != "train" for r in set(ds[s]["relation"])]
+        )
+        new_labels = {
+            relations[i]: label
+            for i, label in enumerate(rng.integers(0, 2, len(relations)))
+        }
+        print("New labels:", new_labels)
+        for split in ds.keys():
+            changed_labels = sum(
+                [int(new_labels[r] != l) for r, l in old_labels[split].items()]
+            )
+            print(
+                "Old labels {} (changed={}): {}".format(
+                    split, changed_labels, old_labels[split]
+                )
+            )
+            assert split != "train" or changed_labels > 0
+        ds = ds.map(lambda example: {"label": new_labels[example["relation"]]})
+
     portion_indices = [
         int(portion_size * 0.01 * len(ds["train"]))
         for portion_size in data_args.portion_sizes
     ]
-    if data_args.portion_idx < len(portion_indices) - 1:
-        ds["validation"] = ds["train"].select(
+    # When there is no next batch to evaluate we evaluate on all the training data.
+    if data_args.portion_idx + 1 < len(portion_indices):
+        ds["train_portion_to_eval"] = ds["train"].select(
             np.arange(
                 portion_indices[data_args.portion_idx],
                 portion_indices[data_args.portion_idx + 1],
             )
         )
     else:
-        ds["validation"] = ds["validation"].rename_column("is_mutable", "label")
-    ds["train"] = ds["train"].select(
+        ds["train_portion_to_eval"] = ds["train"]
+    ds["train_portion_to_train"] = ds["train"].select(
         np.arange(0, portion_indices[data_args.portion_idx])
     )
     print("portion_sizes", data_args.portion_sizes)
-    print(f'Training size: {len(ds["train"])}')
-    print(f'Validation size: {len(ds["validation"])}')
+    print(f'train_portion_to_train: {len(ds["train_portion_to_train"])}')
+    print(f'train_portion_to_eval: {len(ds["train_portion_to_eval"])}')
 
-    if data_args.random_labels_per_relation:
-        rng = np.random.default_rng(training_args.seed)
-        # Using an OrderedDict so we can have the same order each time.
-        relations = list(OrderedDict.fromkeys(ds["train"]["relation"]))
-        relations += list(OrderedDict.fromkeys(ds["validation"]["relation"]))
-        new_labels = {
-            relations[i]: label
-            for i, label in enumerate(rng.integers(0, 2, len(relations)))
-        }
-        print("New random labels:", new_labels)
-        ds["train"] = ds["train"].map(lambda example: {"labels": new_labels[example["relation"]]})
-        ds["validation"] = ds["validation"].map(lambda example: {"labels": new_labels[example["relation"]]})
-
+    # TODO: this filtering should be removed when the dataset is fixed.
+    ds = ds.filter(lambda ex: len(ex["answer"]) > 0)
     tokenized_ds = ds.map(partial(replace_subject, tokenizer))
     print("Example of training example:", tokenized_ds["train"][0])
     print("Loading model")
@@ -211,8 +228,11 @@ def main(device):
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=tokenized_ds["train"],
-        eval_dataset=tokenized_ds["validation"],
+        train_dataset=tokenized_ds["train_portion_to_train"],
+        eval_dataset={
+            # "online_portion": tokenized_ds["train_portion_to_eval"],
+            "val": tokenized_ds["validation"],
+        },
         tokenizer=tokenizer,
         data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
         compute_metrics=compute_metrics,
@@ -225,7 +245,6 @@ def main(device):
         else None,
     )
 
-    print(f'Training size: {len(tokenized_ds["train"])}')
     print(f'Validation size: {len(tokenized_ds["validation"])}')
 
     if training_args.do_train:
@@ -238,23 +257,24 @@ def main(device):
             tokenizer.add_special_tokens({"pad_token": "[PAD]"})
             model.resize_token_embeddings(len(tokenizer))
 
-        logger.info(f"Training/evaluation parameters {training_args}")
-        logger.info(f"Data parameters {data_args}")
-        logger.info(f"Model parameters {model_args}")
+        print(f"Training/evaluation parameters {training_args}")
+        print(f"Data parameters {data_args}")
+        print(f"Model parameters {model_args}")
 
         trainer.train()
         trainer.save_model()
         trainer.save_state()
 
-        metrics = trainer.evaluate(eval_dataset=tokenized_ds["validation"])
-        metrics["eval_samples"] = len(tokenized_ds["validation"])
-        trainer.log_metrics("eval", metrics)
-        trainer.save_metrics("eval", metrics)
+        print("Training done, evlauating model.")
+        metrics = trainer.evaluate(eval_dataset=tokenized_ds["train_portion_to_eval"])
+        metrics["online_portion_samples"] = len(tokenized_ds["train_portion_to_eval"])
+        trainer.log_metrics("online_portion", metrics)
+        trainer.save_metrics("online_portion", metrics)
 
-        metrics = trainer.evaluate(eval_dataset=tokenized_ds["train"])
-        metrics["train_samples"] = len(tokenized_ds["train"])
-        trainer.log_metrics("train", metrics)
-        trainer.save_metrics("train", metrics)
+        metrics = trainer.evaluate(eval_dataset=tokenized_ds["test"])
+        metrics["test_samples"] = len(tokenized_ds["test"])
+        trainer.log_metrics("test", metrics)
+        trainer.save_metrics("test", metrics)
 
 
 if __name__ == "__main__":
