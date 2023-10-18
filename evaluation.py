@@ -10,14 +10,13 @@ from utils.f1_score import compute_score
 def evaluate(data, predictions, target_mode, prediction_mode):
     # compute F1 as max across any alias for any answer for the most recent, most frequent, or specific-year answer
     qa_targets, qa_predictions = [], []
-    for qcode in predictions.keys():
-        query = data[qcode]
+    for query in data:
         target = query.get_relevant_target(target_mode)
         if target is None:
             continue
         prediction = get_prediction(predictions, query.id, prediction_mode)
         if not len(prediction["answer"]):
-            print("Warning: the prediction for qcode={} was empty.".format(qcode))
+            print("Warning: the prediction for query='{}' was empty.".format(query))
         qa_targets.append(
             {
                 "answers": {"answer_start": [0] * len(target), "text": target},
@@ -46,7 +45,7 @@ def main(args):
         config=args,
     )
 
-    data = build_dataset(args.data_paths, args.dataset, args.dataset_split)
+    data = build_dataset(args.data_path)
     predictions = load_predictions(args.predictions_path)
     df, scores = evaluate(data, predictions, args.target_mode, args.prediction_mode)
     df.to_json(os.path.join(experiment_dir, "results_per_example.json"))
@@ -57,22 +56,10 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluation")
     parser.add_argument(
-        "--data_paths",
-        nargs="+",
-        default=["data/val_with_aliases.json"],
+        "--data_path",
+        type=str,
+        default="data/val_with_aliases.json",
         help="Path to data",
-    )
-    parser.add_argument(
-        "--dataset",
-        type=str,
-        default=None,
-        help="",
-    )
-    parser.add_argument(
-        "--dataset_split",
-        type=str,
-        default=None,
-        help="",
     )
     parser.add_argument("--predictions_path", type=str, help="Path to predictions")
     parser.add_argument(

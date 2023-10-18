@@ -4,47 +4,26 @@ from mutability.domain import Queries, Query, Answer
 from datasets import load_dataset
 
 
-def build_dataset(data_paths, dataset=None, split=None):
+def build_dataset(data_path):
     queries = dict()
     queries_obj = Queries()
 
-    # We can use the probing classifier dataset to get the LAMA groundtruth.
-    if dataset:
-        dataset_split = load_dataset(dataset, use_auth_token=True)[split]
-        for data in dataset_split:
-            for sub_uri in data["sub_uri"]:
-                query_id = "{}_{}".format(sub_uri, data["relation"])
-                query = data["template"]
-                year = data.get("date", "2021")
-                relation = data["relation"]
-                if query_id not in queries:
-                    queries[query_id] = {
-                        "query": query,
-                        "relation": relation,
-                        "answers": list(),
-                    }
-                for answer in data["answers"]:
-                    queries[query_id]["answers"].append((answer, year, "no_obj_uri"))
-
-    # Note that if the data_paths contain some of the data in the dataset we
-    # will override it and use the groundtruth from the datapaths instead.
-    for data_path in data_paths:
-        for line in open(data_path):
-            data = json.loads(line)
-            query_id = "_".join(data["id"].split("_")[:2])
-            query = data["query"]
-            year = data.get("date", "2021")
-            relation = data["relation"]
-            if query_id not in queries:
-                queries[query_id] = {
-                    "query": query,
-                    "relation": relation,
-                    "answers": list(),
-                }
-            for answer in data["answer"]:
-                queries[query_id]["answers"].append(
-                    (answer["name"], year, answer["wikidata_id"])
-                )
+    for line in open(data_path):
+        data = json.loads(line)
+        query_id = "_".join(data["id"].split("_")[:2])
+        query = data["query"]
+        year = data.get("date", "2021")
+        relation = data["relation"]
+        if query_id not in queries:
+            queries[query_id] = {
+                "query": query,
+                "relation": relation,
+                "answers": list(),
+            }
+        for answer in data["answer"]:
+            queries[query_id]["answers"].append(
+                (answer["name"], year, answer["wikidata_id"])
+            )
 
     for query_id, data in queries.items():
         query = data["query"]
