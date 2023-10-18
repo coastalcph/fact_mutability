@@ -42,17 +42,6 @@ def load_predictions(data_path):
         for line in fhandle:
             data = json.loads(line)
             qcode = data["qcode"]
-            # Some of the TempLAMA examples contain more than one subject qcode
-            # even though the subjects are written the same and therefore the
-            # query is the same. When preprocessing the data we added a '-' to
-            # include both qcodes. But we should only count one in the evaluation.
-            qcode_split = qcode.split("-")
-            if len(qcode_split) > 1:
-                print(
-                    "The prediction contains 3 elements in the qcode ({}), using"
-                    " only the first: {}".format(qcode, qcode_split[-1])
-                )
-                qcode = qcode_split[-1]
             del data["qcode"]
             non_empty_predictions = []
             for p in data["predictions"]:
