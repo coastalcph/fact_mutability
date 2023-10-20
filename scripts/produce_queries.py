@@ -1,12 +1,15 @@
 from collections import defaultdict
 import json
+from datasets import load_dataset
+
+
 from scripts.gather_templates import relations
 
 def main():
     queries = defaultdict(list)
-    templates = json.load(open('./templates/clean.json'))
+    templates = load_dataset("coastalcph/fm_templates", split="train")
     for relation, cls in relations.items():
-        t = templates[relation]['templates']
+        t = templates[relation][0]['templates']
         subjects = json.load(open("./data/wikidata/objects_by_freq/{}.json".format(relation)))
         for subject in subjects:
             subj_label = subject['label']

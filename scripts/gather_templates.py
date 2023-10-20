@@ -18,6 +18,14 @@ relations = {
     "P138": "immutable",
     "P47": "immutable_n",
     "P136": "immutable_n",
+    "P166": "immutable_n",
+    "P69": "immutable_n",
+    "P101": "immutable_n",
+    "P530": "immutable_n",
+    "P27": "immutable_n",
+    "P1412": "immutable_n",
+    "P1303": "immutable_n",
+    "P190": "immutable_n",
     "P937": "mutable",
     "P108": "mutable",
     "P488": "mutable",
@@ -70,7 +78,7 @@ def main():
                     template = json.loads(line)
                     templates[r]['templates'].append(template['pattern'])
     print(templates)
-    json.dump(templates, open('./data/templates/merged.json', 'w'), indent=True)
+    json.dump(templates, open('./templates/merged.json', 'w'), indent=True)
 
 
 if __name__ == '__main__':
