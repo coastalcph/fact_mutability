@@ -21,7 +21,7 @@
  },
  "P1412": {
   "templates": [
-   "[X] used to communicate in [Y].",
+   "[X] is used to communicate in [Y].",
    "The language that [X] communicates in is [Y].",
    "The language that [X] would normally communicate in is [Y].",
    "The language that [X] speaks is [Y].",
@@ -61,17 +61,17 @@
  },
  "P69": {
   "templates": [
-    "[X] was educated at [Y].",
-    "[X] attended the educational establishment [Y].",
-    "[X] completed their studies at [Y].",
-    "[X] earned an educational degree from [Y].",
-    "[X] acquired their education at [Y]."
+    "[X] has been educated at [Y].",
+    "[X] has attended the educational establishment [Y].",
+    "[X] has completed their studies at [Y].",
+    "[X] has earned an educational degree from [Y].",
+    "[X] has acquired their education at [Y]."
   ],
   "description": "educational institution attended by subject"
  },
  "P166": {
   "templates": [
-   "[X] was awarded the [Y].",
+   "[X] has been awarded the [Y].",
    "[X] earned the award of [Y].",
    "[X] was recognized with the distinction [Y].",
    "[X] was bestowed with the [Y].",
@@ -171,11 +171,11 @@
  },
  "P495": {
   "templates": [
-   "[X] was created in the country named [Y].",
-   "[X] originated in the country named [Y].",
+   "[X] has been created in the country named [Y].",
+   "[X] has originated in the country named [Y].",
    "[X] was developed in the country named [Y].",
    "[X] comes from the country named [Y].",
-   "[X] was developed in the country named [Y]."
+   "[X] has been developed in the country named [Y]."
   ],
   "description": "country of origin of this item (creative work, food, phrase, product, etc.)"
  },
@@ -221,10 +221,10 @@
  },
  "P937": {
   "templates": [
-   "[X] used to work in the location of [Y].",
-   "[X]'s work location was in [Y].",
+   "[X] works in the location of [Y].",
+   "[X]'s work location is in [Y].",
    "[X] found employment located in [Y].",
-   "[X] was employed in the location of [Y].",
+   "[X] is employed in the location of [Y].",
    "[X] took up work located in [Y]."
   ],
   "description": "location where persons were active"
