@@ -223,6 +223,101 @@
   ],
   "description": "creative work's genre or an artist's field of work (P101). Use main subject (P921) to relate creative works to their topic"
  },
+ "P166": {
+  "templates": [
+   "[X] was awarded the [Y] ."
+  ],
+  "description": "award or recognition received by a person, organisation or creative work"
+ },
+ "P69": {
+  "templates": [
+   "[X] was educated at the University of [Y] ."
+  ],
+  "description": "educational institution attended by subject"
+ },
+ "P101": {
+  "templates": [
+   "[X] works in the field of [Y] .",
+   "[X] works in the field of [Y].",
+   "[X] specializes in [Y].",
+   "[Y] is the specialization of [X].",
+   "The expertise of [X] is [Y].",
+   "[Y] is the expertise of [X].",
+   "The domain of activity of [X] is [Y].",
+   "The domain of work of [X] is [Y].",
+   "[Y] is the domain of activity of [X].",
+   "[X]'s area of work is [Y].",
+   "[X]'s domain of work is [Y].",
+   "[X]'s domain of activity is [Y].",
+   "[X]'s expertise is [Y].",
+   "[X] works in the area of [Y]."
+  ],
+  "description": "specialization of a person or organization; see P106 for the occupation"
+ },
+ "P530": {
+  "templates": [
+   "[X] maintains diplomatic relations with [Y] .",
+   "[X] maintains diplomatic relations with [Y].",
+   "[Y] maintains diplomatic relations with [X].",
+   "[X] ties diplomatic relations with [Y].",
+   "[Y] ties diplomatic relations with [X].",
+   "[X] has diplomatic relations with [Y].",
+   "[Y] has diplomatic relations with [X].",
+   "[X], which has diplomatic relations with [Y]",
+   "[Y], which has diplomatic relations with [X]",
+   "[Y], which ties diplomatic relations with [X]"
+  ],
+  "description": "diplomatic relations of the country"
+ },
+ "P27": {
+  "templates": [
+   "[X] is [Y] citizen .",
+   "[X] is [Y] citizen.",
+   "[X] is a citizen of [Y].",
+   "[X], a citizen of [Y].",
+   "[X], who is a citizen of [Y].",
+   "[X] holds a citizenship of [Y].",
+   "[X] has a citizenship of [Y].",
+   "[X], who holds a citizenship of [Y].",
+   "[X], who has a citizenship of [Y].",
+   "as a citizen of [Y], [X]"
+  ],
+  "description": "the object is a country that recognizes the subject as its citizen"
+ },
+ "P1412": {
+  "templates": [
+   "[X] used to communicate in [Y] .",
+   "[X] used to communicate in [Y] .",
+   "[X] communicated in [Y] .",
+   "[X] typically used [Y] to communicate .",
+   "[X] used [Y] to communicate .",
+   "[Y] was a language used by [X] .",
+   "[Y] is the language used by [X] .",
+   "[Y] is the language typically used by [X] .",
+   "[X] used the [Y] language ."
+  ],
+  "description": "language(s) that a person speaks or writes, including the native language(s)"
+ },
+ "P1303": {
+  "templates": [
+   "[X] plays [Y] .",
+   "[X] plays [Y] .",
+   "[Y] player [X] ",
+   "[X] plays the [Y] .",
+   "[X] is a [Y] player."
+  ],
+  "description": "musical instrument that a person plays"
+ },
+ "P190": {
+  "templates": [
+   "[X] and [Y] are twin cities .",
+   "[X] and [Y] are twin cities.",
+   "[Y] and [X] are twin cities.",
+   "[Y] is a twin city of [X].",
+   "[X] is a twin city of [Y]."
+  ],
+  "description": "twin towns, sister cities, twinned municipalities and other localities that have a partnership or cooperative agreement, either legally or informally acknowledged by their governments"
+ },
  "P937": {
   "templates": [
    "[X] used to work in [Y] .",
@@ -245,16 +340,13 @@
   "description": "person or organization for which the subject works or worked"
  },
  "P488": {
-  "templates": [],
-  "description": "presiding member of an organization, group or body "
+  "templates": []
  },
  "P286": {
-  "templates": [],
-  "description": "on-field manager or head coach of a sports club (not to be confused with a general manager P505, which is not a coaching position) or person"
+  "templates": []
  },
  "P6": {
-  "templates": [],
-  "description": "head of the executive power of this town, city, municipality, state, country, or other governmental body"
+  "templates": []
  },
  "P39": {
   "templates": [
@@ -298,31 +390,18 @@
   "description": "brand and trademark associated with the marketing of subject music recordings and music videos"
  },
  "P551": {
-  "templates": [],
-  "description": "the place where the person is or has been, resident"
+  "templates": []
  },
  "P451": {
-  "templates": [],
-  "description": "someone with whom the person is in a relationship without being married. Use "spouse" (P26) for married couples"
+  "templates": []
  },
  "P1308": {
-  "templates": [],
-  "description": "persons who hold and/or held an office or noble title"
+  "templates": []
  },
  "P210": {
-  "templates": [
-    "[X] is the party chief of [Y].",
-    "[X] is the chief representative of [Y]."
-  ],
-  "description": "chief representative of a party in an institution or an administrative unit (use qualifier to identify the party)"
+  "templates": []
  },
  "P1037": {
-  "templates": [
-    "[X] is the director of [Y].",
-    "[X] is the manager of [Y].",
-    "[X] is the person who manages [Y].",
-    "[X] manages [Y]."
-  ],
-  "description": "person who manages any kind of group"
+  "templates": []
  }
 }

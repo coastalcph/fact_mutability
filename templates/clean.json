@@ -1,4 +1,84 @@
 {
+ "P190": {
+  "templates": [
+   "[X] is a twin city of [Y].",
+   "[X] is twinned with [Y].",
+   "[X] is twinned with its partner municipality, [Y].",
+   "[X] has established a twin municipality partnership with [Y].",
+   "[X] maintains a twin city connection with [Y]."
+  ],
+  "description": "twin towns, sister cities, twinned municipalities and other localities that have a partnership or cooperative agreement, either legally or informally acknowledged by their governments"
+ },
+ "P1303": {
+  "templates": [
+   "[X] plays the instrument the [Y].",
+   "[X] is skilled at playing the [Y].",
+   "[X] is a master at playing the [Y].",
+   "[X] excels at playing the [Y].",
+   "[X] is a virtuoso on the [Y]."
+  ],
+  "description": "musical instrument that a person plays"
+ },
+ "P1412": {
+  "templates": [
+   "[X] used to communicate in [Y].",
+   "The language that [X] communicates in is [Y].",
+   "The language that [X] would normally communicate in is [Y].",
+   "The language that [X] speaks is [Y].",
+   "The language that [X] speaks and writes is [Y]."
+  ],
+  "description": "language(s) that a person speaks or writes, including the native language(s)"
+ },
+ "P27": {
+  "templates": [
+   "[X] is a citizen of [Y].",
+   "[X], a citizen of [Y].",
+   "[X], who is a citizen of [Y].",
+   "[X] holds a citizenship of [Y].",
+   "[X] has a citizenship of [Y]."
+  ],
+  "description": "the object is a country that recognizes the subject as its citizen"
+ },
+ "P530": {
+  "templates": [
+   "[X] maintains diplomatic relations with [Y].",
+   "[X] ties diplomatic relations with [Y].",
+   "[X] has diplomatic relations with [Y].",
+   "[X], which has diplomatic relations with [Y].",
+   "[X] has an official diplomatic relationship with [Y]."
+  ],
+  "description": "diplomatic relations of the country"
+ },
+ "P101": {
+  "templates": [
+   "[X] works in the field of [Y].",
+   "[X] specializes in [Y].",
+   "The expertise of [X] is [Y].",
+   "The domain of work of [X] is [Y].",
+   "[X]'s area of work is [Y]."
+  ],
+  "description": "specialization of a person or organization; see P106 for the occupation"
+ },
+ "P69": {
+  "templates": [
+    "[X] was educated at [Y].",
+    "[X] attended the educational establishment [Y].",
+    "[X] completed their studies at [Y].",
+    "[X] earned an educational degree from [Y].",
+    "[X] acquired their education at [Y]."
+  ],
+  "description": "educational institution attended by subject"
+ },
+ "P166": {
+  "templates": [
+   "[X] was awarded the [Y].",
+   "[X] earned the award of [Y].",
+   "[X] was recognized with the distinction [Y].",
+   "[X] was bestowed with the [Y].",
+   "[X] was given the award [Y]."
+  ],
+  "description": "award or recognition received by a person, organisation or creative work"
+ },
  "P740": {
   "templates": [
    "[X] was founded in the location of [Y].",
@@ -132,10 +212,10 @@
  "P136": {
   "templates": [
    "The creative work's genre of [X] is [Y].",
-   "[X] falls into the genre of [Y].",
-   "The genre of [X] is [Y].",
+   "[X] falls into the artistic genre of [Y].",
+   "The artistic genre of [X] is [Y].",
    "The creative piece [X] belongs to the genre of [Y].",
-   "For [X], the genre can be described as [Y]."
+   "For [X], the artistic genre can be described as [Y]."
   ],
   "description": "creative work's genre or an artist's field of work (P101). Use main subject (P921) to relate creative works to their topic"
  },
