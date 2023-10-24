@@ -3,21 +3,9 @@ from collections import Counter
 import numpy as np
 
 SPLIT_TO_RELATIONS = {
-    "train": [
-        "P103",
-        "P19",
-        "P20",
-        "P937",
-        "P286",
-        "P6",
-    ],
-    "validation": [
-        "P159",
-        "P364",
-        "P108",
-        "P488",
-    ],
-    "test": ["P36", "P449", "P39", "P264"],
+    "train": ["P103", "P19", "P937", "P286", "P6", "P159", "P27", "P1412", "P190"],
+    "validation": ["P20", "P364", "P108", "P488", "P69", "P101"],
+    "test": ["P36", "P449", "P39", "P264", "P47", "P136"],
 }
 
 
@@ -40,6 +28,10 @@ if __name__ == "__main__":
             == int(ex["id"][-1])
         )
     ds = ds.map(lambda ex: {"is_mutable": 1 if ex["type"] == "mutable" else 0})
-    print(ds)
+    ds_1_n = ds.filter(lambda ex: ex["type"] != "immutable")
+    ds_1_1 = ds.filter(lambda ex: ex["type"] != "immutable_n")
+    print("Dataset mutable (1-1) vs immutable", ds_1_1)
+    print("Dataset mutable (1-N) vs immutable", ds_1_n)
     print("Pushing to the hub...")
-    ds.push_to_hub("coastalcph/fm_queries_classifier")
+    ds_1_1.push_to_hub("coastalcph/fm_classifier_mutable-1-1")
+    ds_1_n.push_to_hub("coastalcph/fm_classifier_mutable-1-n")
