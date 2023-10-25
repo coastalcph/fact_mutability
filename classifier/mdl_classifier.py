@@ -17,7 +17,7 @@ import logging
 import os
 import re
 import sys
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import partial
@@ -77,6 +77,7 @@ class DataTrainingArguments:
         metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
     random_labels_per_relation: Optional[bool] = field(default=False)
+    subsample_train: Optional[float] = field(default=1.0)
 
 
 @dataclass
@@ -159,6 +160,12 @@ def main(device):
     ds = load_dataset(data_args.dataset_name, use_auth_token=True)
     ds.pop("all_fm")
     ds = ds.rename_column("is_mutable", "label").shuffle(seed=training_args.seed)
+    if data_args.subsample_train < 1.0:
+        print("Going to subsample train, before:", Counter(ds["train"]["relation"]))
+        ds["train"] = ds["train"].select(
+            np.arange(0, int(len(ds["train"]) * data_args.subsample_train))
+        )
+        print("After subsample:", Counter(ds["train"]["relation"]))
 
     if data_args.random_labels_per_relation:
         rng = np.random.default_rng(training_args.seed)
@@ -230,7 +237,7 @@ def main(device):
         args=training_args,
         train_dataset=tokenized_ds["train_portion_to_train"],
         eval_dataset={
-            "online_portion": tokenized_ds["train_portion_to_eval"],
+            "online_eval": tokenized_ds["train_portion_to_eval"],
             "val": tokenized_ds["validation"],
         },
         tokenizer=tokenizer,
@@ -266,20 +273,19 @@ def main(device):
         trainer.save_state()
 
         print("Training done, evlauating model.")
+    for prefix, split in [
+        ("online_portion", "train_portion_to_eval"),
+        ("test", "test"),
+        ("train", "train_portion_to_train"),
+        ("val_final", "validation"),
+    ]:
         metrics = trainer.evaluate(
-            eval_dataset=tokenized_ds["train_portion_to_eval"],
-            metric_key_prefix="online_final",
+            eval_dataset=tokenized_ds[split],
+            metric_key_prefix=prefix,
         )
-        metrics["online_portion_samples"] = len(tokenized_ds["train_portion_to_eval"])
-        trainer.log_metrics("online_portion", metrics)
-        trainer.save_metrics("online_portion", metrics)
-
-        metrics = trainer.evaluate(
-            eval_dataset=tokenized_ds["test"], metric_key_prefix="test"
-        )
-        metrics["test_samples"] = len(tokenized_ds["test"])
-        trainer.log_metrics("test", metrics)
-        trainer.save_metrics("test", metrics)
+        metrics[f"{prefix}_samples"] = len(tokenized_ds[split])
+        trainer.log_metrics(prefix, metrics)
+        trainer.save_metrics(prefix, metrics)
 
 
 if __name__ == "__main__":
