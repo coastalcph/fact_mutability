@@ -25,21 +25,23 @@ def get_code_length(dir_name, n):
 def compute_online_codelength(dir_name):
     log2 = collections.defaultdict(dict)
     for i in range(0, 10):
-        log2[i] = get_code_length(dir_name, i)
+        log2[i] = -get_code_length(dir_name, i)
     print(dir_name)
     print(log2)
-    return log2[0] - sum([log2[i] for i in range(1, 10)])
-
-
-def compute_compression(codelength, ds):
-    num_classes = 2
-    uniform_codelength = len(ds["train"]) * np.log2(num_classes)
-    return uniform_codelength / codelength
+    return sum([log2[i] for i in range(0, 10)])
 
 
 def print_metrics(dir_name):
-    online_codelength = compute_online_codelength(dir_name)
-    compression = compute_compression(online_codelength, ds)
+    num_classes = 2
+    first_portion_size = 0.1
+    uniform_codelength_first_batch = int(
+        first_portion_size * 0.01 * len(ds["train"])
+    ) * np.log2(num_classes)
+    online_codelength = uniform_codelength_first_batch + compute_online_codelength(
+        dir_name
+    )
+    uniform_codelength = len(ds["train"]) * np.log2(num_classes)
+    compression = uniform_codelength / online_codelength
     cl_trained_all_data = get_code_length(dir_name, 10)
     # model_cl + correction = online_cl
     # model_cl = online_cl - correction
@@ -51,7 +53,7 @@ def print_metrics(dir_name):
     print("Final prob. acc:", get_acc(dir_name))
 
 
-ds = load_dataset("coastalcph/fm_queries_classifier", use_auth_token=True)
+ds = load_dataset("coastalcph/fm_queries_classifier")
 print_metrics(os.path.join(RESULTS_DIR, "normal_fm_dataset/"))
 print()
 print_metrics(os.path.join(RESULTS_DIR, "random_fm_dataset/"))
