@@ -169,12 +169,12 @@ def main(device):
 
     if data_args.random_labels_per_relation:
         rng = np.random.default_rng(training_args.seed)
-        # Using an OrderedDict so we can have the same order each time.
-        relations = list(OrderedDict.fromkeys(ds["train"]["relation"]))
         old_labels = {
             split: {r: l for r, l in zip(ds[split]["relation"], ds[split]["label"])}
             for split in ds.keys()
         }
+        # Using an OrderedDict so we can have the same order each time.
+        relations = list(OrderedDict.fromkeys(ds["train"]["relation"]))
         # TODO: should we update the validation to random?
         relations += sorted(
             [r for s in ds.keys() if s != "train" for r in set(ds[s]["relation"])]
@@ -188,11 +188,12 @@ def main(device):
             changed_labels = sum(
                 [int(new_labels[r] != l) for r, l in old_labels[split].items()]
             )
-            print(
-                "Old labels {} (changed={}): {}".format(
-                    split, changed_labels, old_labels[split]
-                )
-            )
+            print("---", split, f"(changed {changed_labels}) ---")
+            for r in old_labels[split]:
+                if old_labels[split][r] != new_labels[r]:
+                    print(f"{r} changed {old_labels[split][r]}->{new_labels[r]}")
+                else:
+                    print(f"{r} {new_labels[r]}")
             assert split != "train" or changed_labels > 0
         ds = ds.map(lambda example: {"label": new_labels[example["relation"]]})
 
@@ -274,10 +275,10 @@ def main(device):
 
         print("Training done, evlauating model.")
     for prefix, split in [
-        ("online_portion", "train_portion_to_eval"),
-        ("test", "test"),
-        ("train", "train_portion_to_train"),
-        ("val_final", "validation"),
+        ("f_online_portion", "train_portion_to_eval"),
+        ("f_test", "test"),
+        ("f_train", "train_portion_to_train"),
+        ("f_val", "validation"),
     ]:
         metrics = trainer.evaluate(
             eval_dataset=tokenized_ds[split],
