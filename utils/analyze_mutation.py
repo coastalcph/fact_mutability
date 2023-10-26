@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from mutability.domain import Relation
 from utils.data_handling import *
 
-from scripts.gather_templates import relations
+from dataset import relations
 
 
 np.random.seed(42)

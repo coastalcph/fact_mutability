@@ -5,7 +5,7 @@ import os
 import wandb
 
 from utils.data_handling import *
-from utils.f1_score import compute_score
+from evalutation.f1_score import compute_score
 
 # reds = [
 #     "P937",
