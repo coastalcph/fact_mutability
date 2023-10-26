@@ -12,12 +12,10 @@ python train_classifier.py \
     --save_strategy "epoch" --save_total_limit 1 \
     --load_best_model_at_end True --do_train
 """
-import json
 import logging
 import os
-import re
 import sys
-from collections import OrderedDict, Counter
+from collections import OrderedDict, Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import partial
@@ -25,7 +23,6 @@ from typing import List, Optional
 
 import evaluate
 import numpy as np
-import pandas as pd
 import torch
 import transformers
 import wandb
@@ -77,6 +74,7 @@ class DataTrainingArguments:
         metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
     random_labels_per_relation: Optional[bool] = field(default=False)
+    random_labels_per_template: Optional[bool] = field(default=False)
     subsample_train: Optional[float] = field(default=1.0)
 
 
@@ -110,6 +108,62 @@ def compute_metrics(eval_pred):
         "sum_log2_prob": np.sum(np.log2(labels_probs)),
         "mean_log_prob": np.mean(-np.log(labels_probs)),
     }
+
+
+def randomize_labels_per_relation(seed, ds):
+    rng = np.random.default_rng(seed)
+    old_labels = {
+        split: {r: l for r, l in zip(ds[split]["relation"], ds[split]["label"])}
+        for split in ds.keys()
+    }
+    relations = sorted([r for s in ds.keys() for r in set(ds[s]["relation"])])
+    new_labels = {
+        relations[i]: label
+        for i, label in enumerate(rng.integers(0, 2, len(relations)))
+    }
+    print("New labels:", new_labels)
+    for split in ds.keys():
+        changed_labels = sum(
+            [int(new_labels[r] != l) for r, l in old_labels[split].items()]
+        )
+        print("---", split, f"(changed {changed_labels}) ---")
+        for r in old_labels[split]:
+            if old_labels[split][r] != new_labels[r]:
+                print(f"{r} changed {old_labels[split][r]}->{new_labels[r]}")
+            else:
+                print(f"{r} {new_labels[r]}")
+        assert split != "train" or changed_labels > 0
+    return ds.map(lambda example: {"label": new_labels[example["relation"]]})
+
+
+def randomize_labels_per_template(seed, ds):
+    def get_relation_template_id_from_id(example_id):
+        _, relation, template_id = example_id.split("_")
+        return f"{relation}_{template_id}"
+
+    rng = np.random.default_rng(seed)
+    old_labels = defaultdict(dict)
+    for split in ds.keys():
+        for id_, l in zip(ds[split]["id"], ds[split]["label"]):
+            old_labels[split][get_relation_template_id_from_id(id_)] = l
+    print("old_labels:", old_labels)
+    relation_templates = [r_t for s in ds.keys() for r_t in old_labels[s].keys()]
+    new_labels = {
+        relation_templates[i]: label
+        for i, label in enumerate(rng.integers(0, 2, len(relation_templates)))
+    }
+    for split in ds.keys():
+        print("---", split, f"---")
+        for r_t in sorted(old_labels[split].keys()):
+            if old_labels[split][r_t] != new_labels[r_t]:
+                print(f"{r_t} changed {old_labels[split][r_t]}->{new_labels[r_t]}")
+            else:
+                print(f"{r_t} {new_labels[r_t]}")
+    return ds.map(
+        lambda example: {
+            "label": new_labels[get_relation_template_id_from_id(example["id"])]
+        }
+    )
 
 
 def main(device):
@@ -168,34 +222,9 @@ def main(device):
         print("After subsample:", Counter(ds["train"]["relation"]))
 
     if data_args.random_labels_per_relation:
-        rng = np.random.default_rng(training_args.seed)
-        old_labels = {
-            split: {r: l for r, l in zip(ds[split]["relation"], ds[split]["label"])}
-            for split in ds.keys()
-        }
-        # Using an OrderedDict so we can have the same order each time.
-        relations = list(OrderedDict.fromkeys(ds["train"]["relation"]))
-        # TODO: should we update the validation to random?
-        relations += sorted(
-            [r for s in ds.keys() if s != "train" for r in set(ds[s]["relation"])]
-        )
-        new_labels = {
-            relations[i]: label
-            for i, label in enumerate(rng.integers(0, 2, len(relations)))
-        }
-        print("New labels:", new_labels)
-        for split in ds.keys():
-            changed_labels = sum(
-                [int(new_labels[r] != l) for r, l in old_labels[split].items()]
-            )
-            print("---", split, f"(changed {changed_labels}) ---")
-            for r in old_labels[split]:
-                if old_labels[split][r] != new_labels[r]:
-                    print(f"{r} changed {old_labels[split][r]}->{new_labels[r]}")
-                else:
-                    print(f"{r} {new_labels[r]}")
-            assert split != "train" or changed_labels > 0
-        ds = ds.map(lambda example: {"label": new_labels[example["relation"]]})
+        ds = randomize_labels_per_relation(training_args.seed, ds)
+    elif data_args.random_labels_per_template:
+        ds = randomize_labels_per_template(training_args.seed, ds)
 
     portion_indices = [
         int(portion_size * 0.01 * len(ds["train"]))
