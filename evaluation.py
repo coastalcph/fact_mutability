@@ -27,6 +27,7 @@ from utils.f1_score import compute_score
 def evaluate(data, predictions, target_mode, prediction_mode, aliases):
     # compute F1 as max across any alias for any answer for the most recent, most frequent, or specific-year answer
     qa_targets, qa_predictions = defaultdict(list), defaultdict(list)
+    num_empty = 0
     for query_id, query in data.items():
         relation = query['relation']
         target = list()
@@ -39,7 +40,8 @@ def evaluate(data, predictions, target_mode, prediction_mode, aliases):
             continue
         prediction = get_prediction(predictions, query_id, prediction_mode)
         if not len(prediction["answer"]):
-            print("Warning: the prediction for query='{}' was empty.".format(query))
+            num_empty += 1
+            # print("Warning: the prediction for query='{}' was empty.".format(query))
             continue
         qa_targets[relation].append(
             {
@@ -57,6 +59,7 @@ def evaluate(data, predictions, target_mode, prediction_mode, aliases):
         qa_predictions["all"].append({"prediction_text": prediction["answer"], "id": query_id})
 
     print("Evaluating on {} datapoints".format(len(qa_targets["all"])))
+    print("Num empty", num_empty)
     for rel in qa_targets.keys():
         df, scores = compute_score(predictions=qa_predictions[rel], references=qa_targets[rel])
         yield rel, df, {"n_datapoints": len(qa_targets["all"]), **scores}
@@ -95,10 +98,14 @@ def main(args):
     data = load_queries(args.data_path)
     aliases = load_aliases(args.aliases_path)
     predictions = load_predictions(args.predictions_path)
-    for rel, df, scores in evaluate(data, predictions, args.target_mode, args.prediction_mode, aliases):
-        df.to_json(os.path.join(experiment_dir, f"{rel}_results_per_example.json"))
-        wandb.log({k: v for k, v in scores.items() if not isinstance(v, list)})
-        print(f"{rel}: ", scores["ave_f1"])
+
+    with open(os.path.join(experiment_dir, f"metrics.jsonl"), "w") as fhandle:
+        for rel, df, scores in evaluate(data, predictions, args.target_mode, args.prediction_mode, aliases):
+            df.to_json(os.path.join(experiment_dir, f"{rel}_results_per_example.json"))
+            wandb.log({k: v for k, v in scores.items() if not isinstance(v, list)})
+            print(f"{rel}: ", scores["ave_f1"])
+            data = {rel: scores['ave_f1']}
+            fhandle.write("{}\n".format(json.dumps(data)))
 
 
 if __name__ == "__main__":
