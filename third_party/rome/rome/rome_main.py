@@ -44,6 +44,7 @@ def apply_rome_to_model(
                 upd_matrix = delta_u.unsqueeze(1) @ delta_v.unsqueeze(0)
                 w = nethook.get_parameter(model, w_name)
                 upd_matrix = upd_matrix_match_shape(upd_matrix, w.shape)
+                print("Update norm:", torch.linalg.vector_norm(upd_matrix).item())
 
                 if return_orig_weights and w_name not in weights_copy:
                     assert i == 0
