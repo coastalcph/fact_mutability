@@ -165,15 +165,22 @@ def main(args):
     os.makedirs(experiment_dir, exist_ok=True)
 
     print("Loading model")
+    use_fast = True
     if "alpaca" in args.model_name_or_path or "llama" in args.model_name_or_path:
         # the fact tokenizer causes issues with protobuf and tokenizers libraries
-        tokenizer = AutoTokenizer.from_pretrained(
-            args.model_name_or_path, use_fast=False
-        )
-    else:
-        tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
+        use_fast = False
+    tokenizer = AutoTokenizer.from_pretrained(
+        args.model_name_or_path, use_fast=use_fast
+    )
     if "t5" not in args.model_name_or_path:
-        model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path).to(device)
+        if args.cache_dir is not None:
+            model = AutoModelForCausalLM.from_pretrained(
+                args.model_name_or_path, cache_dir=args.cache_dir
+            ).to(device)
+        else:
+            model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path).to(
+                device
+            )
     else:
         model = AutoModelForSeq2SeqLM.from_pretrained(
             args.model_name_or_path, load_in_8bit=True, device_map="auto"
@@ -228,6 +235,12 @@ if __name__ == "__main__":
         type=str,
         default="huggyllama/llama-7b",
         help="Model name or path",
+    )
+    parser.add_argument(
+        "--cache_dir",
+        type=str,
+        default=None,
+        help="",
     )
     args = parser.parse_args()
 
