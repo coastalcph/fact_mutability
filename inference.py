@@ -88,7 +88,9 @@ def get_scores(model_output, input_ids, prompt, query, tokenizer):
         trimmed_sequence = trimmed_sequence[:-1]
     answer = tokenizer.decode(trimmed_sequence)
     words = answer.split()
-    if not trimmed_sequence or (len(words) == 1 and words[0] in ["the", "a", "an"]):
+    if not token_scores or (
+        (len(token_scores) == 1 or len(words) == 1) and words[0] in ["the", "a", "an"]
+    ):
         print(
             "Warning: Empty generation. input_ids={}, output_sequence={}".format(
                 input_ids, sequence
