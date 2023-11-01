@@ -88,7 +88,7 @@ def get_scores(model_output, input_ids, prompt, query, tokenizer):
         trimmed_sequence = trimmed_sequence[:-1]
     answer = tokenizer.decode(trimmed_sequence)
     words = answer.split()
-    if not token_scores or (
+    if not token_scores or not words or (
         (len(token_scores) == 1 or len(words) == 1) and words[0] in ["the", "a", "an"]
     ):
         print(
