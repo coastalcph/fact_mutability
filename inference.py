@@ -187,6 +187,7 @@ def main(args):
         model = AutoModelForSeq2SeqLM.from_pretrained(
             args.model_name_or_path, load_in_8bit=True, device_map="auto"
         )
+    print("model.hf_device_map", model.hf_device_map)
     model.eval()
 
     print("Loading dataset")
