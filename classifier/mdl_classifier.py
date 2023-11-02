@@ -75,6 +75,7 @@ class DataTrainingArguments:
     )
     random_labels_per_relation: Optional[bool] = field(default=False)
     random_labels_per_template: Optional[bool] = field(default=False)
+    seed_for_random_labels: Optional[int] = field(default=-1)
     subsample_train: Optional[float] = field(default=1.0)
 
 
@@ -116,6 +117,7 @@ def randomize_labels_per_relation(seed, ds):
         split: {r: l for r, l in zip(ds[split]["relation"], ds[split]["label"])}
         for split in ds.keys()
     }
+    # Sorted so we assign the same labels across different runs.
     relations = sorted([r for s in ds.keys() for r in set(ds[s]["relation"])])
     new_labels = {
         relations[i]: label
@@ -221,10 +223,15 @@ def main(device):
         )
         print("After subsample:", Counter(ds["train"]["relation"]))
 
+    seed_for_random_labels = (
+        data_args.seed_for_random_labels
+        if data_args.seed_for_random_labels != -1
+        else training_args.seed
+    )
     if data_args.random_labels_per_relation:
-        ds = randomize_labels_per_relation(training_args.seed, ds)
+        ds = randomize_labels_per_relation(seed_for_random_labels, ds)
     elif data_args.random_labels_per_template:
-        ds = randomize_labels_per_template(training_args.seed, ds)
+        ds = randomize_labels_per_template(seed_for_random_labels, ds)
 
     portion_indices = [
         int(portion_size * 0.01 * len(ds["train"]))
