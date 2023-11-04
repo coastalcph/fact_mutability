@@ -214,7 +214,6 @@ def main(device):
 
     tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
     ds = load_dataset(data_args.dataset_name, use_auth_token=True)
-    ds.pop("all_fm")
     ds = ds.rename_column("is_mutable", "label").shuffle(seed=training_args.seed)
     if data_args.subsample_train < 1.0:
         print("Going to subsample train, before:", Counter(ds["train"]["relation"]))
@@ -254,8 +253,6 @@ def main(device):
     print(f'train_portion_to_train: {len(ds["train_portion_to_train"])}')
     print(f'train_portion_to_eval: {len(ds["train_portion_to_eval"])}')
 
-    # TODO: this filtering should be removed when the dataset is fixed.
-    ds = ds.filter(lambda ex: len(ex["answer"]) > 0)
     tokenized_ds = ds.map(partial(replace_subject, tokenizer))
     print("Example of training example:", tokenized_ds["train"][0])
     print("Loading model")
