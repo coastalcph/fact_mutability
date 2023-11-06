@@ -4,11 +4,15 @@ import numpy as np
 import os
 import argparse
 import json
-from datasets import Dataset
+from datasets import Dataset, load_dataset
 from tqdm import tqdm
 
 
 def main(args):
+    fm_queries_ds = load_dataset("coastalcph/fm_queries")["train"]
+    relation_to_mut_type = {
+        r: m for r, m in zip(fm_queries_ds["relation"], fm_queries_ds["type"])
+    }
     rng = np.random.default_rng(7)
     relation_to_examples = collections.defaultdict(list)
     relation_to_answers = collections.defaultdict(set)
@@ -17,6 +21,7 @@ def main(args):
             relation_data = json.load(f)
         for ex in relation_data:
             ex["relation"] = relation[: -len(".json")]
+            ex["type"] = relation_to_mut_type[ex["relation"]]
             relation_to_examples[relation].append(ex)
             for ans in ex["prediction"]["predictions"]:
                 relation_to_answers[relation].add(ans["answer"])
