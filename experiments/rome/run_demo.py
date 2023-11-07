@@ -1,8 +1,4 @@
-import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
-from third_party.rome.util import nethook
-from third_party.rome.util.generate import generate_interactive, generate_fast
 
 from third_party.rome.experiments.py.demo import demo_model_editing
 
@@ -56,4 +52,3 @@ for line in output.getvalue().split("\n"):
 assert len(update_matrix_norm) == 1, len(update_matrix_norm)
 print("Captured data:", step_losses)
 print(update_matrix_norm[0])
-

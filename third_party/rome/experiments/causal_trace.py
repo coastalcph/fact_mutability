@@ -495,6 +495,12 @@ def layername(model, num, kind=None):
         if kind == "attn":
             kind = "attention"
         return f'gpt_neox.layers.{num}{"" if kind is None else "." + kind}'
+    if hasattr(model, "model"):
+        if kind == "embed":
+            return "model.embed_tokens"
+        if kind == "attn":
+            kind = "self_attn"
+        return f'model.layers.{num}{"" if kind is None else "." + kind}'
     assert False, "unknown transformer structure"
 
 
