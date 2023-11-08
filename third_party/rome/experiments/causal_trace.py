@@ -467,12 +467,13 @@ class ModelAndTokenizer:
             )
             nethook.set_requires_grad(False, model)
             model.eval().cuda()
+        self.model_name = model_name
         self.tokenizer = tokenizer
         self.model = model
         self.layer_names = [
             n
             for n, m in model.named_modules()
-            if (re.match(r"^(transformer|gpt_neox)\.(h|layers)\.\d+$", n))
+            if (re.match(r"^(transformer|gpt_neox|model)\.(h|layers)\.\d+$", n))
         ]
         self.num_layers = len(self.layer_names)
 
@@ -550,7 +551,7 @@ def plot_trace_heatmap(result, savepdf=None, title=None, xlabel=None, modelname=
     for i in range(*result["subject_range"]):
         labels[i] = labels[i] + "*"
 
-    with plt.rc_context(rc={"font.family": "Times New Roman"}):
+    with plt.rc_context():
         fig, ax = plt.subplots(figsize=(3.5, 2), dpi=200)
         h = ax.pcolor(
             differences,
@@ -650,7 +651,14 @@ def predict_from_input(model, inp):
     return preds, p
 
 
-def collect_embedding_std(mt, subjects):
+def collect_embedding_std(mt, subjects, subjects_from_ds=None):
+    cache_filename = None
+    if mt.model_name and subjects_from_ds:
+        cache_filename = os.path.join(DATA_DIR, f'rome_cache/{mt.model_name}_{subjects_from_ds}.txt')
+        if os.path.isfile(cache_filename):
+            print("Using cache noise level from", cache_filename)
+            with open(cache_filename) as f:
+                return float(f.readline())
     alldata = []
     for s in subjects:
         inp = make_inputs(mt.tokenizer, [s])
@@ -659,6 +667,11 @@ def collect_embedding_std(mt, subjects):
             alldata.append(t.output[0])
     alldata = torch.cat(alldata)
     noise_level = alldata.std().item()
+    if cache_filename:
+        print("Caching noise level to", cache_filename)
+        os.makedirs(os.path.dirname(cache_filename), exist_ok=True)
+        with open(cache_filename, 'w') as f:
+            f.write(str(noise_level))
     return noise_level
 
 
