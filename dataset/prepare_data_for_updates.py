@@ -98,13 +98,20 @@ def main(args):
         }
     )
     print(ds_splitted)
-    print(
-        collections.Counter(
-            [f"{r}-{t}" for r, t in zip(ds_splitted["relation"], ds_splitted["type"])]
+    for split in ds_splitted.keys():
+        print(split)
+        print(
+            collections.Counter(
+                [
+                    f"{r}-{t}"
+                    for r, t in zip(
+                        ds_splitted[split]["relation"],
+                        ds_splitted[split]["type"],
+                    )
+                ]
+            )
         )
-    )
-    mut_type_counts = collections.Counter(ds_splitted["type"])
-    print(mut_type_counts)
+        print(collections.Counter(ds_splitted[split]["type"]))
     ds.push_to_hub(args.hf_dataset_name)
 
 
