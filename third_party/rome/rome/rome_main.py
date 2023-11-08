@@ -98,9 +98,7 @@ def execute_rome(
             request,
             hparams,
             layer,
-            get_context_templates(
-                model, tok, hparams.context_template_length_params, hparams.bos_token
-            ),
+            get_context_templates(model, tok, hparams.context_template_length_params),
         )
         print("Left vector shape:", left_vector.shape)
         right_vector: torch.Tensor = compute_v(
@@ -110,9 +108,7 @@ def execute_rome(
             hparams,
             layer,
             left_vector,
-            get_context_templates(
-                model, tok, hparams.context_template_length_params, hparams.bos_token
-            ),
+            get_context_templates(model, tok, hparams.context_template_length_params),
         )
         print("Right vector shape:", right_vector.shape)
 
@@ -156,7 +152,7 @@ def upd_matrix_match_shape(matrix: torch.Tensor, shape: torch.Size) -> torch.Ten
         )
 
 
-def get_context_templates(model, tok, length_params, bos="<|endoftext|>"):
+def get_context_templates(model, tok, length_params):
     global CONTEXT_TEMPLATES_CACHE
 
     if CONTEXT_TEMPLATES_CACHE is None:
@@ -167,7 +163,7 @@ def get_context_templates(model, tok, length_params, bos="<|endoftext|>"):
                     generate_fast(
                         model,
                         tok,
-                        [bos],
+                        [""],
                         n_gen_per_prompt=n_gen,
                         max_out_len=length,
                     )

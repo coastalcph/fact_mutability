@@ -30,5 +30,3 @@ class ROMEHyperParams(HyperParams):
     mom2_dataset: str
     mom2_n_samples: int
     mom2_dtype: str
-
-    bos_token: str = "<|endoftext|>"
