@@ -4,8 +4,10 @@ import numpy as np
 import os
 import argparse
 import json
-from datasets import Dataset, load_dataset
+from datasets import Dataset, load_dataset, DatasetDict
 from tqdm import tqdm
+
+SEED = 7
 
 
 def main(args):
@@ -13,7 +15,7 @@ def main(args):
     relation_to_mut_type = {
         r: m for r, m in zip(fm_queries_ds["relation"], fm_queries_ds["type"])
     }
-    rng = np.random.default_rng(7)
+    rng = np.random.default_rng(SEED)
     relation_to_examples = collections.defaultdict(list)
     relation_to_answers = collections.defaultdict(set)
     for relation in os.listdir(args.selected_examples_folder):
@@ -26,6 +28,8 @@ def main(args):
             for ans in ex["prediction"]["predictions"]:
                 relation_to_answers[relation].add(ans["answer"])
     relations = sorted(list(relation_to_examples.keys()))
+
+    # Select object updates at random for each example.
     ds_data = []
     for relation in tqdm(relations, desc="Selecting updates per relation"):
         for ex in relation_to_examples[relation]:
@@ -65,7 +69,43 @@ def main(args):
             ds_data.append(ex)
     ds = Dataset.from_list(ds_data)
     print(ds)
-    ds.push_to_hub("coastalcph/fm_updates")
+    print(collections.Counter([f"{r}-{t}" for r, t in zip(ds["relation"], ds["type"])]))
+    mut_type_counts = collections.Counter(ds["type"])
+    print(mut_type_counts)
+
+    # Split validation set.
+    validation_count = int(min(list(mut_type_counts.values())) * 0.1)
+    validation_indices = []
+    for mut_type in mut_type_counts.keys():
+        ds_mut_type = ds.filter(lambda ex: ex["type"] == mut_type)
+        relations = sorted(set(ds_mut_type["relation"]))
+        count_per_relation = int(validation_count / len(relations))
+        count_left = validation_count - count_per_relation * len(relations)
+        count_per_relation = [count_per_relation for _ in relations]
+        for i in range(count_left):
+            count_per_relation[i] += 1
+        assert sum(count_per_relation) == validation_count
+        for relation_i, relation in enumerate(relations):
+            rel_indices = [i for i, ex in enumerate(ds) if ex["relation"] == relation]
+            validation_indices.extend(
+                rng.choice(rel_indices, count_per_relation[relation_i], replace=False)
+            )
+    train_indices = list(set(list(range(len(ds)))).difference(validation_indices))
+    ds_splitted = DatasetDict(
+        {
+            "test": ds.select(indices=train_indices),
+            "validation": ds.select(indices=validation_indices),
+        }
+    )
+    print(ds_splitted)
+    print(
+        collections.Counter(
+            [f"{r}-{t}" for r, t in zip(ds_splitted["relation"], ds_splitted["type"])]
+        )
+    )
+    mut_type_counts = collections.Counter(ds_splitted["type"])
+    print(mut_type_counts)
+    ds.push_to_hub("coastalcph/fm_updates_alpaca")
 
 
 if __name__ == "__main__":
