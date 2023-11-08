@@ -112,7 +112,7 @@ def main(args):
             )
         )
         print(collections.Counter(ds_splitted[split]["type"]))
-    ds.push_to_hub(args.hf_dataset_name)
+    ds_splitted.push_to_hub(args.hf_dataset_name)
 
 
 if __name__ == "__main__":
