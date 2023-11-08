@@ -25,6 +25,7 @@ from transformers import (
 )
 from tqdm import tqdm
 from datasets import load_dataset
+import wandb
 
 torch.set_grad_enabled(False)
 
@@ -292,4 +293,5 @@ if __name__ == "__main__":
         help="",
     )
     args = parser.parse_args()
+    wandb.init(project="causal_analysis", name=args.model_name, config=args)
     main(args)
