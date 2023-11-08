@@ -16,6 +16,7 @@ from third_party.rome.experiments.causal_trace import (
     collect_embedding_std,
 )
 import numpy as np
+from matplotlib import pyplot as plt
 from accelerate import init_empty_weights, load_checkpoint_and_dispatch, Accelerator
 from transformers import (
     AutoConfig,
@@ -214,6 +215,41 @@ def trace_important_window(
     return torch.stack(table)
 
 
+def plot_last_subj_token(differences, low_score, avg_over_n, modelname, kind, savepdf):
+    window = 10
+    fig, ax = plt.subplots(figsize=(3.5, 2), dpi=200)
+    h = ax.pcolor(
+        differences,
+        cmap={None: "Purples", "None": "Purples", "mlp": "Greens", "attn": "Reds"}[
+            kind
+        ],
+        vmin=low_score,
+    )
+    ax.invert_yaxis()
+    ax.set_yticks([0.5 + i for i in range(len(differences))])
+    ax.set_xticks([0.5 + i for i in range(0, differences.shape[1] - 6, 5)])
+    ax.set_xticklabels(list(range(0, differences.shape[1] - 6, 5)))
+    ax.set_yticklabels(["Last subj token"])
+    if not kind:
+        ax.set_title("Impact of restoring state after corrupted input")
+        ax.set_xlabel(f"single restored layer within {modelname}")
+    else:
+        kindname = "MLP" if kind == "mlp" else "Attn"
+        ax.set_title(
+            "Avg. ({}) impact of restoring {} after corrupted input".format(
+                avg_over_n, kindname
+            )
+        )
+        ax.set_xlabel(f"Center of interval of {window} restored {kindname} layers")
+    plt.colorbar(h)
+    if savepdf:
+        os.makedirs(os.path.dirname(savepdf), exist_ok=True)
+        plt.savefig(savepdf, bbox_inches="tight")
+        plt.close()
+    else:
+        plt.show()
+
+
 def main(args):
     cache_output_dir = os.path.join(
         args.output_folder, args.model_name, "cache_hidden_flow"
@@ -257,13 +293,39 @@ def main(args):
             }
             np.savez(filename, **numpy_result)
         else:
-            numpy_result = numpy.load(filename, allow_pickle=True)
+            numpy_result = np.load(filename, allow_pickle=True)
         plot_result = dict(numpy_result)
         plot_result["kind"] = kind
         pdfname = os.path.join(
             pdf_output_dir, f'{str(numpy_result["answer"]).strip()}_{ex_id}{kind}.pdf'
         )
         plot_trace_heatmap(numpy_result, savepdf=pdfname, modelname=args.model_name)
+
+    # Save plot of average.
+    scores_last_subj_token = None
+    low_scores = 0
+    files = os.listdir(cache_output_dir)
+    for results_file in files:
+        numpy_result = np.load(
+            os.path.join(cache_output_dir, results_file), allow_pickle=True
+        )
+        this_scores = numpy_result["scores"][numpy_result["subject_range"][-1] - 1]
+        if scores_last_subj_token is None:
+            scores_last_subj_token = this_scores
+        else:
+            scores_last_subj_token += this_scores
+        low_scores += numpy_result["low_score"]
+    plot_last_subj_token(
+        np.array([scores_last_subj_token / len(files)]),
+        low_scores / len(files),
+        len(files),
+        args.model_name,
+        kind,
+        savepdf=os.path.join(pdf_output_dir, "avg.pdf"),
+    )
+    print(
+        f"Biggest effect on {kind} on average in layer {np.argmax(scores_last_subj_token)}"
+    )
 
 
 if __name__ == "__main__":
