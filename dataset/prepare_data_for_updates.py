@@ -105,13 +105,19 @@ def main(args):
     )
     mut_type_counts = collections.Counter(ds_splitted["type"])
     print(mut_type_counts)
-    ds.push_to_hub("coastalcph/fm_updates_alpaca")
+    ds.push_to_hub(args.hf_dataset_name)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Inference")
     parser.add_argument(
         "--selected_examples_folder",
+        required=True,
+        type=str,
+        help="",
+    )
+    parser.add_argument(
+        "--hf_dataset_name",
         required=True,
         type=str,
         help="",
