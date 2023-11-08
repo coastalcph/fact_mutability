@@ -23,6 +23,7 @@ from transformers import (
     AutoTokenizer,
     LlamaForCausalLM,
 )
+from tqdm import tqdm
 from datasets import load_dataset
 
 torch.set_grad_enabled(False)
@@ -132,9 +133,7 @@ def calculate_hidden_flow(
     Runs causal tracing over every token/layer combination in the network
     and returns a dictionary numerically summarizing the results.
     """
-    print(prompt, subject)
     inp = make_inputs(mt.tokenizer, [prompt] * (samples + 1))
-    print(inp)
     with torch.no_grad():
         answer_t, base_score = [d[0] for d in predict_from_input(mt.model, inp)]
     [answer] = decode_tokens(mt.tokenizer, [answer_t])
@@ -240,7 +239,7 @@ def main(args):
     )
     print(f"Using noise level {noise_level}")
     kind = "mlp"
-    for ex in ds["validation"]:
+    for ex in tqdm(ds["validation"], desc="Validation examples"):
         ex_id = f"{ex['query']['rel_id']}_{ex['query']['qid']}"
         filename = os.path.join(cache_output_dir, f"{ex_id}{kind}.npz")
         if not os.path.isfile(filename):
