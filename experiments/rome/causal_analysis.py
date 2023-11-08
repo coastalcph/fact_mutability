@@ -262,7 +262,7 @@ def main(args):
         pdfname = os.path.join(
             pdf_output_dir, f'{str(numpy_result["answer"]).strip()}_{ex_id}{kind}.pdf'
         )
-        plot_trace_heatmap(result, savepdf=pdfname, modelname=args.model_name)
+        plot_trace_heatmap(numpy_result, savepdf=pdfname, modelname=args.model_name)
 
 
 if __name__ == "__main__":
