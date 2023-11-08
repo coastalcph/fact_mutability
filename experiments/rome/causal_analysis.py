@@ -240,7 +240,7 @@ def main(args):
     )
     print(f"Using noise level {noise_level}")
     kind = "mlp"
-    for ex in ds:
+    for ex in ds["validation"]:
         ex_id = f"{ex['query']['rel_id']}_{ex['query']['qid']}"
         filename = os.path.join(cache_output_dir, f"{ex_id}{kind}.npz")
         if not os.path.isfile(filename):
