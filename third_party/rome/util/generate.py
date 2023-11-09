@@ -88,10 +88,22 @@ def generate_fast(
     """
 
     # Unroll prompts and tokenize
-    inp = [prompt for prompt in prompts for _ in range(n_gen_per_prompt)]
-    inp_tok = tok(inp, padding=True, return_tensors="pt").to(
-        next(model.parameters()).device
+    # inp = [prompt for prompt in prompts for _ in range(n_gen_per_prompt)]
+    inp_tok = {"input_ids": None}
+    if prompts is not None:
+        inp_tok = tok(prompts, padding=True, return_tensors="pt").to(
+            next(model.parameters()).device
+        )
+    out = model.generate(
+        **inp_tok,
+        top_k=top_k,
+        do_sample=True,
+        max_new_tokens=max_out_len,
+        num_return_sequences=n_gen_per_prompt,
     )
+    assert out[0][0].item() == tok.bos_token_id
+    return [tok.decode(o[1:]) for o in out]
+
     input_ids, attention_mask = inp_tok["input_ids"], inp_tok["attention_mask"]
     batch_size = input_ids.size(0)
 

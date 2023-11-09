@@ -8,8 +8,8 @@ from typing import List
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
 from util import nethook
+from util.globals import TOKENIZER_TO_PREPEND_SPACE
 
 
 def get_reprs_at_word_tokens(
@@ -55,9 +55,12 @@ def get_words_idxs_in_templates(
 
     # Compute prefixes and suffixes of the tokenized context
     fill_idxs = [tmp.index("{}") for tmp in context_templates]
-    prefixes, suffixes = [
-        tmp[: fill_idxs[i]] for i, tmp in enumerate(context_templates)
-    ], [tmp[fill_idxs[i] + 2 :] for i, tmp in enumerate(context_templates)]
+
+    prefixes = [tmp[: fill_idxs[i]] for i, tmp in enumerate(context_templates)]
+    suffixes = [tmp[fill_idxs[i] + 2 :] for i, tmp in enumerate(context_templates)]
+    suffixes = [
+        s if not s or TOKENIZER_TO_PREPEND_SPACE[type(tok)] else s[1:] for s in suffixes
+    ]
     words = deepcopy(words)
 
     # Pre-process tokens
@@ -67,14 +70,15 @@ def get_words_idxs_in_templates(
             prefix = prefix[:-1]
 
             prefixes[i] = prefix
-            words[i] = f" {words[i].strip()}"
+            if TOKENIZER_TO_PREPEND_SPACE[type(tok)]:
+                words[i] = f" {words[i].strip()}"
 
     # Tokenize to determine lengths
     assert len(prefixes) == len(words) == len(suffixes)
     n = len(prefixes)
-    batch_tok = tok([*prefixes, *words, *suffixes])
+    batch_tok = tok([*prefixes, *words, *suffixes], add_special_tokens=False)
     prefixes_tok, words_tok, suffixes_tok = [
-        batch_tok[i : i + n] for i in range(0, n * 3, n)
+        batch_tok["input_ids"][i : i + n] for i in range(0, n * 3, n)
     ]
     prefixes_len, words_len, suffixes_len = [
         [len(el) for el in tok_list]

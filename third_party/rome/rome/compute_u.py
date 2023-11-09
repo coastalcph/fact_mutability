@@ -22,6 +22,7 @@ def get_inv_cov(
     mom2_dataset: str,
     mom2_n_samples: str,
     mom2_dtype: str,
+    config_max_length_attr: str,
 ) -> torch.Tensor:
     """
     Retrieves covariance statistics, then computes the algebraic inverse.
@@ -47,6 +48,7 @@ def get_inv_cov(
             to_collect=["mom2"],
             sample_size=mom2_n_samples,
             precision=mom2_dtype,
+            config_max_length_attr=config_max_length_attr,
         )
         inv_mom2_cache[key] = torch.inverse(
             stat.mom2.moment().to("cuda")
@@ -114,6 +116,7 @@ def compute_u(
             hparams.mom2_dataset,
             hparams.mom2_n_samples,
             hparams.mom2_dtype,
+            hparams.config_max_length_attr,
         ) @ u.unsqueeze(1)
         u = u.squeeze()
 

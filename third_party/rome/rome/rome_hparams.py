@@ -32,3 +32,4 @@ class ROMEHyperParams(HyperParams):
     mom2_dtype: str
 
     empty_prompt: str = "<|endoftext|>"
+    config_max_length_attr: str = "n_positions"

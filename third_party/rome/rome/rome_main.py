@@ -5,29 +5,16 @@ import torch
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
-    LlamaTokenizerFast,
-    GPT2TokenizerFast,
-    T5TokenizerFast,
-    LlamaTokenizer,
-    GPTNeoXTokenizerFast,
 )
-
 from util import nethook
 from util.generate import generate_fast
+from util.globals import TOKENIZER_TO_PREPEND_SPACE
 
 from .compute_u import compute_u
 from .compute_v import compute_v
 from .rome_hparams import ROMEHyperParams
 
 CONTEXT_TEMPLATES_CACHE = None
-
-TOKENIZER_TO_PREPEND_SPACE = {
-    LlamaTokenizerFast: False,
-    GPT2TokenizerFast: True,
-    T5TokenizerFast: True,
-    LlamaTokenizer: False,
-    GPTNeoXTokenizerFast: True,
-}
 
 
 def apply_rome_to_model(
@@ -176,7 +163,7 @@ def upd_matrix_match_shape(matrix: torch.Tensor, shape: torch.Size) -> torch.Ten
 
 def get_context_templates(model, tok, length_params, empty_prompt="<|endoftext|>"):
     global CONTEXT_TEMPLATES_CACHE
-
+    print("Getting context templates")
     if CONTEXT_TEMPLATES_CACHE is None:
         CONTEXT_TEMPLATES_CACHE = ["{}"] + [
             x + ". {}"
@@ -185,7 +172,7 @@ def get_context_templates(model, tok, length_params, empty_prompt="<|endoftext|>
                     generate_fast(
                         model,
                         tok,
-                        [empty_prompt],
+                        None,
                         n_gen_per_prompt=n_gen,
                         max_out_len=length,
                     )

@@ -2,7 +2,6 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import torch
-from matplotlib.style import context
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from rome import repr_tools
