@@ -104,7 +104,10 @@ def execute_rome(
             hparams,
             layer,
             get_context_templates(
-                model, tok, hparams.context_template_length_params, hparams.empty_prompt
+                model,
+                tok,
+                hparams.context_template_length_params,
+                hparams.empty_prompts,
             ),
         )
         print("Left vector shape:", left_vector.shape)
@@ -116,7 +119,10 @@ def execute_rome(
             layer,
             left_vector,
             get_context_templates(
-                model, tok, hparams.context_template_length_params, hparams.empty_prompt
+                model,
+                tok,
+                hparams.context_template_length_params,
+                hparams.empty_prompts,
             ),
         )
         print("Right vector shape:", right_vector.shape)
@@ -161,7 +167,7 @@ def upd_matrix_match_shape(matrix: torch.Tensor, shape: torch.Size) -> torch.Ten
         )
 
 
-def get_context_templates(model, tok, length_params, empty_prompt="<|endoftext|>"):
+def get_context_templates(model, tok, length_params, empty_prompts):
     global CONTEXT_TEMPLATES_CACHE
     print("Getting context templates")
     if CONTEXT_TEMPLATES_CACHE is None:
@@ -172,9 +178,11 @@ def get_context_templates(model, tok, length_params, empty_prompt="<|endoftext|>
                     generate_fast(
                         model,
                         tok,
-                        None,
-                        n_gen_per_prompt=n_gen,
+                        None if not empty_prompts else empty_prompts,
                         max_out_len=length,
+                        n_gen_per_prompt=n_gen
+                        if not empty_prompts
+                        else n_gen / len(empty_prompts),
                     )
                     for length, n_gen in length_params
                 ),

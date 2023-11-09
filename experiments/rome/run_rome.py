@@ -23,7 +23,7 @@ from third_party.rome.util.globals import HPARAMS_DIR
 def main(args):
     os.makedirs(args.output_folder, exist_ok=True)
 
-    if "llama" in args.model_name:
+    if "gpt" not in args.model_name:
         config = AutoConfig.from_pretrained(args.model_name_or_path)
         with init_empty_weights():
             model = AutoModelForCausalLM.from_config(config)
