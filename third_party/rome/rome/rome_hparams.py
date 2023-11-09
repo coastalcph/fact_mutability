@@ -31,5 +31,5 @@ class ROMEHyperParams(HyperParams):
     mom2_n_samples: int
     mom2_dtype: str
 
-    empty_prompts: List = []
+    empty_prompts: List = None
     config_max_length_attr: str = "n_positions"

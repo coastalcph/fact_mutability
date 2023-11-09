@@ -182,7 +182,7 @@ def get_context_templates(model, tok, length_params, empty_prompts):
                         max_out_len=length,
                         n_gen_per_prompt=n_gen
                         if not empty_prompts
-                        else n_gen / len(empty_prompts),
+                        else int(n_gen / len(empty_prompts)),
                     )
                     for length, n_gen in length_params
                 ),
