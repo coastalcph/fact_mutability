@@ -2,7 +2,15 @@ from copy import deepcopy
 from typing import Dict, List, Tuple
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    LlamaTokenizerFast,
+    GPT2TokenizerFast,
+    T5TokenizerFast,
+    LlamaTokenizer,
+    GPTNeoXTokenizerFast,
+)
 
 from util import nethook
 from util.generate import generate_fast
@@ -12,6 +20,14 @@ from .compute_v import compute_v
 from .rome_hparams import ROMEHyperParams
 
 CONTEXT_TEMPLATES_CACHE = None
+
+TOKENIZER_TO_PREPEND_SPACE = {
+    LlamaTokenizerFast: False,
+    GPT2TokenizerFast: True,
+    T5TokenizerFast: True,
+    LlamaTokenizer: False,
+    GPTNeoXTokenizerFast: True,
+}
 
 
 def apply_rome_to_model(
@@ -70,9 +86,11 @@ def execute_rome(
 
     # Update target and print info
     request = deepcopy(request)
-    if request["target_new"]["str"][0] != " ":
-        # Space required for correct tokenization
+    # Space required for correct tokenization
+    if TOKENIZER_TO_PREPEND_SPACE[type(tok)] and request["target_new"]["str"][0] != " ":
         request["target_new"]["str"] = " " + request["target_new"]["str"]
+    if TOKENIZER_TO_PREPEND_SPACE[type(tok)] and request["old_answer"]["str"][0] != " ":
+        request["old_answer"]["str"] = " " + request["old_answer"]["str"]
     print(
         f"Executing ROME algorithm for the update: "
         f"[{request['prompt'].format(request['subject'])}] -> [{request['target_new']['str']}]"
@@ -99,7 +117,7 @@ def execute_rome(
             hparams,
             layer,
             get_context_templates(
-                model, tok, hparams.context_template_length_params, hparams.bos_token
+                model, tok, hparams.context_template_length_params, hparams.empty_prompt
             ),
         )
         print("Left vector shape:", left_vector.shape)
@@ -111,7 +129,7 @@ def execute_rome(
             layer,
             left_vector,
             get_context_templates(
-                model, tok, hparams.context_template_length_params, hparams.bos_token
+                model, tok, hparams.context_template_length_params, hparams.empty_prompt
             ),
         )
         print("Right vector shape:", right_vector.shape)
@@ -156,7 +174,7 @@ def upd_matrix_match_shape(matrix: torch.Tensor, shape: torch.Size) -> torch.Ten
         )
 
 
-def get_context_templates(model, tok, length_params, bos="<|endoftext|>"):
+def get_context_templates(model, tok, length_params, empty_prompt="<|endoftext|>"):
     global CONTEXT_TEMPLATES_CACHE
 
     if CONTEXT_TEMPLATES_CACHE is None:
@@ -167,7 +185,7 @@ def get_context_templates(model, tok, length_params, bos="<|endoftext|>"):
                     generate_fast(
                         model,
                         tok,
-                        [bos],
+                        [empty_prompt],
                         n_gen_per_prompt=n_gen,
                         max_out_len=length,
                     )

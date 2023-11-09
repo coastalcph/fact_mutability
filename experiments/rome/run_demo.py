@@ -1,11 +1,13 @@
+import collections
+import io
+import os
+import re
+from contextlib import redirect_stdout
+
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from third_party.rome.experiments.py.demo import demo_model_editing
 from third_party.rome.rome import ROMEHyperParams, apply_rome_to_model
-import io
-from contextlib import redirect_stdout
 from third_party.rome.util.globals import HPARAMS_DIR
-import os
 
 MODEL_NAME = "gpt2-medium"
 ALG_NAME = "ROME"
@@ -26,6 +28,7 @@ requests = [
         "prompt": "{} was the founder of",
         "subject": "Steve Jobs",
         "target_new": {"str": "Microsoft"},
+        "old_answer": {"str": "Apple"},
     }
 ]
 
@@ -40,15 +43,19 @@ with redirect_stdout(output):
         model, tok, requests, hparams, return_orig_weights=True
     )
 print(output.getvalue())
+
 # Extract data from stdout.
-step_losses = []
-update_matrix_norm = []
+data = collections.defaultdict(list)
 for line in output.getvalue().split("\n"):
     if line.startswith("loss"):
-        step_losses.append(float(line[len("loss") : line.find("=")]))
+        data["loss_per_step"].append(float(line[len("loss") : line.find("=")]))
+        m = re.match(
+            ".*avg prob of \[.*\] (\d+\.\d+) / avg prob of \[.*\] (\d+\.\d+)", line
+        )
+        data["prob_new"].append(m.group(1))
+        data["prob_old"].append(m.group(2))
     elif line.startswith("Update norm:"):
-        update_matrix_norm.append(float(line[len("Update norm:") :]))
+        data["update_matrix_norm"].append(float(line[len("Update norm:") :]))
 
-assert len(update_matrix_norm) == 1, len(update_matrix_norm)
-print("Loss per step:", step_losses)
-print("Norm of the update:", update_matrix_norm[0])
+assert len(data["update_matrix_norm"]) == 1, data["update_matrix_norm"]
+print(data)

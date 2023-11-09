@@ -28,9 +28,12 @@ def compute_v(
     print("Computing right vector (v)")
 
     # Tokenize target into list of int token IDs
-    target_ids = tok(request["target_new"]["str"], return_tensors="pt").to("cuda")[
-        "input_ids"
-    ][0]
+    target_ids = torch.tensor(
+        tok.convert_tokens_to_ids(tok.tokenize(request["target_new"]["str"]))
+    ).to("cuda")
+    old_answer_ids = torch.tensor(
+        tok.convert_tokens_to_ids(tok.tokenize(request["old_answer"]["str"]))
+    ).to("cuda")
 
     # Compile list of rewriting and KL x/y pairs
     rewriting_prompts, kl_prompts = [
@@ -49,9 +52,15 @@ def compute_v(
     rewriting_targets = torch.tensor(-100, device="cuda").repeat(
         len(rewriting_prompts), *input_tok["input_ids"].shape[1:]
     )
+    old_targets = torch.tensor(-100, device="cuda").repeat(
+        len(rewriting_prompts), *input_tok["input_ids"].shape[1:]
+    )
     for i in range(len(rewriting_prompts)):
         ex_len = input_tok["attention_mask"][i].sum()
         rewriting_targets[i, ex_len - len(target_ids) : ex_len] = target_ids
+        old_targets[i, ex_len - len(target_ids) : ex_len] = old_answer_ids[
+            : len(target_ids)
+        ]
 
     # Compute indices of the tokens where the fact is looked up
     lookup_idxs = [
@@ -131,6 +140,13 @@ def compute_v(
         ).squeeze(2)
         mask = (rewriting_targets != -100).float()
 
+        loss_old = torch.gather(
+            log_probs,
+            2,
+            torch.where(old_targets != -100, old_targets, 0).unsqueeze(2),
+        ).squeeze(2)
+        loss_old = -(loss_old * mask).sum(1) / target_ids.size(0)
+
         # Aggregate total losses
         nll_loss_each = -(loss * mask).sum(1) / target_ids.size(0)
         nll_loss = nll_loss_each.mean()
@@ -146,6 +162,8 @@ def compute_v(
             f"loss {np.round(loss.item(), 3)} = {np.round(nll_loss.item(), 3)} + {np.round(kl_loss.item(), 3)} + {np.round(weight_decay.item(), 3)} "
             f"avg prob of [{request['target_new']['str']}] "
             f"{torch.exp(-nll_loss_each).mean().item()}"
+            f" / avg prob of [{request['old_answer']['str']}] "
+            f"{torch.exp(-loss_old).mean().item()}"
         )
         if loss < 5e-2:
             break
