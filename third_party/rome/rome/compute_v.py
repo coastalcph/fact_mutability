@@ -54,13 +54,18 @@ def compute_v(
     old_targets = torch.tensor(-100, device="cuda").repeat(
         len(rewriting_prompts), *input_tok["input_ids"].shape[1:]
     )
-
+    # if both are the same length then no prob.
+    # if old_answer is larger then we want to take at most target_ids
+    # if target_ids is larger then we want to fill with old_answer_ids plus -100
     for i in range(len(rewriting_prompts)):
         ex_len = input_tok["attention_mask"][i].sum()
         rewriting_targets[i, ex_len - len(target_ids) : ex_len] = target_ids
-        old_targets[i, ex_len - len(target_ids) : ex_len] = old_answer_ids[
-            : min(len(target_ids), len(old_answer_ids))
-        ]
+        if len(target_ids) <= len(old_answer_ids):
+            old_targets[i, ex_len - len(target_ids) : ex_len] = old_answer_ids[
+                : len(target_ids)
+            ]
+        else:
+            old_targets[i, ex_len - len(old_answer_ids) : ex_len] = old_answer_ids
 
     # Compute indices of the tokens where the fact is looked up
     lookup_idxs = [
