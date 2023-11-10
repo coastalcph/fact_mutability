@@ -16,6 +16,7 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     LlamaForCausalLM,
+    set_seed,
 )
 
 from third_party.rome.rome import ROMEHyperParams, apply_rome_to_model
@@ -185,4 +186,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     wandb.init(project="rome", name=args.exp_name, config=args)
     torch.manual_seed(args.seed)
+    set_seed(args.seed)
     main(args)
