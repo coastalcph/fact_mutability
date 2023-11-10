@@ -54,11 +54,12 @@ def compute_v(
     old_targets = torch.tensor(-100, device="cuda").repeat(
         len(rewriting_prompts), *input_tok["input_ids"].shape[1:]
     )
+
     for i in range(len(rewriting_prompts)):
         ex_len = input_tok["attention_mask"][i].sum()
         rewriting_targets[i, ex_len - len(target_ids) : ex_len] = target_ids
         old_targets[i, ex_len - len(target_ids) : ex_len] = old_answer_ids[
-            : len(target_ids)
+            : min(len(target_ids), len(old_answer_ids))
         ]
 
     # Compute indices of the tokens where the fact is looked up
