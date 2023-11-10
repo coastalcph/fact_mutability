@@ -88,7 +88,7 @@ def main(args):
     hparams = ROMEHyperParams.from_json(params_path)
     for hparam_update in ROME_UPDATE_HPARAMS:
         if getattr(args, hparam_update) is not None:
-            hparams = getattr(args, hparam_update)
+            setattr(hparams, hparam_update, getattr(args, hparam_update))
     wandb.config["rome_hparams"] = hparams
     results = []
     for request in tqdm(requests, desc="Requests"):
