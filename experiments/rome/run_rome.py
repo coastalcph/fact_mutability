@@ -82,6 +82,7 @@ def main(args):
     hparams = ROMEHyperParams.from_json(params_path)
     results = []
     for request in requests:
+        print(request)
         output = io.StringIO()
         with redirect_stdout(output):
             model_new, orig_weights = apply_rome_to_model(
@@ -108,7 +109,9 @@ def main(args):
         print(data)
         print("----------------------------------------------")
         results.append(data)
-    filename = os.path.join(args.output_folder, args.exp_name + ".json")
+    filename = os.path.join(
+        args.output_folder, args.exp_name.replace(" ", "_") + ".json"
+    )
     with open(filename, "w") as f:
         json.dump(results, f)
 
