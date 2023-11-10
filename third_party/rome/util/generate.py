@@ -78,7 +78,6 @@ def generate_fast(
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     prompts: List[str],
-    seed: int,
     n_gen_per_prompt: int = 1,
     top_k: int = 5,
     max_out_len: int = 200,
