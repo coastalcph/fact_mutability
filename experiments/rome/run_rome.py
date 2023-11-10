@@ -9,6 +9,7 @@ from contextlib import redirect_stdout
 import wandb
 from accelerate import Accelerator, init_empty_weights, load_checkpoint_and_dispatch
 from datasets import load_dataset
+from tqdm import tqdm
 from transformers import (
     AutoConfig,
     AutoModelForCausalLM,
@@ -81,7 +82,7 @@ def main(args):
     )
     hparams = ROMEHyperParams.from_json(params_path)
     results = []
-    for request in requests:
+    for request in tqdm(requests, desc="Requests"):
         print(request)
         output = io.StringIO()
         with redirect_stdout(output):
