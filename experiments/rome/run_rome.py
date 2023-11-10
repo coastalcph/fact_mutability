@@ -20,6 +20,8 @@ from transformers import (
 from third_party.rome.rome import ROMEHyperParams, apply_rome_to_model
 from third_party.rome.util.globals import HPARAMS_DIR
 
+ROME_UPDATE_HPARAMS = ["v_lr", "v_weight_decay"]
+
 
 def main(args):
     os.makedirs(args.output_folder, exist_ok=True)
@@ -81,6 +83,10 @@ def main(args):
         HPARAMS_DIR, "ROME", f"{args.model_name.replace('/', '_')}.json"
     )
     hparams = ROMEHyperParams.from_json(params_path)
+    for hparam_update in ROME_UPDATE_HPARAMS:
+        if getattr(args, hparam_update) is not None:
+            hparams = getattr(args, hparam_update)
+    wandb.config["rome_hparams"] = hparams
     results = []
     for request in tqdm(requests, desc="Requests"):
         print(request)
@@ -153,6 +159,18 @@ if __name__ == "__main__":
         "--dataset_split",
         default="validation",
         type=str,
+        help="",
+    )
+    parser.add_argument(
+        "--v_lr",
+        default=None,
+        type=float,
+        help="",
+    )
+    parser.add_argument(
+        "--v_weight_decay",
+        default=None,
+        type=float,
         help="",
     )
     args = parser.parse_args()
