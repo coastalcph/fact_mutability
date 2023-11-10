@@ -108,6 +108,7 @@ def execute_rome(
                 tok,
                 hparams.context_template_length_params,
                 hparams.empty_prompts,
+                request["seed"],
             ),
         )
         print("Left vector shape:", left_vector.shape)
@@ -123,6 +124,7 @@ def execute_rome(
                 tok,
                 hparams.context_template_length_params,
                 hparams.empty_prompts,
+                request["seed"],
             ),
         )
         print("Right vector shape:", right_vector.shape)
@@ -167,7 +169,7 @@ def upd_matrix_match_shape(matrix: torch.Tensor, shape: torch.Size) -> torch.Ten
         )
 
 
-def get_context_templates(model, tok, length_params, empty_prompts):
+def get_context_templates(model, tok, length_params, empty_prompts, seed):
     global CONTEXT_TEMPLATES_CACHE
     print("Getting context templates")
     if CONTEXT_TEMPLATES_CACHE is None:
@@ -179,6 +181,7 @@ def get_context_templates(model, tok, length_params, empty_prompts):
                         model,
                         tok,
                         None if not empty_prompts else empty_prompts,
+                        seed=seed,
                         max_out_len=length,
                         n_gen_per_prompt=n_gen
                         if not empty_prompts

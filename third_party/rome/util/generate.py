@@ -78,6 +78,7 @@ def generate_fast(
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     prompts: List[str],
+    seed: int,
     n_gen_per_prompt: int = 1,
     top_k: int = 5,
     max_out_len: int = 200,
@@ -100,6 +101,7 @@ def generate_fast(
         do_sample=True,
         max_new_tokens=max_out_len,
         num_return_sequences=n_gen_per_prompt,
+        seed=seed,
     )
     assert out[0][0].item() == tok.bos_token_id
     return [tok.decode(o[1:]) for o in out]

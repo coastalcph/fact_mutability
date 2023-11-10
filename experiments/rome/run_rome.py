@@ -6,6 +6,7 @@ import os
 import re
 from contextlib import redirect_stdout
 
+import torch
 import wandb
 from accelerate import Accelerator, init_empty_weights, load_checkpoint_and_dispatch
 from datasets import load_dataset
@@ -58,6 +59,7 @@ def main(args):
             "subject": "Steve Jobs",
             "target_new": {"str": "Microsoft"},
             "old_answer": {"str": "Apple"},
+            "seed": args.seed,
         }
     ]
 
@@ -75,6 +77,7 @@ def main(args):
                         "subject": subj,
                         "target_new": {"str": update},
                         "old_answer": {"str": old_answer},
+                        "seed": args.seed,
                     }
                 )
 
@@ -173,6 +176,13 @@ if __name__ == "__main__":
         type=float,
         help="",
     )
+    parser.add_argument(
+        "--seed",
+        default=42,
+        type=float,
+        help="",
+    )
     args = parser.parse_args()
     wandb.init(project="rome", name=args.exp_name, config=args)
+    torch.manual_seed(args.seed)
     main(args)
