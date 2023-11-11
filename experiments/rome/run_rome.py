@@ -107,7 +107,7 @@ def main(args):
             if line.startswith("loss"):
                 data["loss_per_step"].append(float(line[len("loss") : line.find("=")]))
                 m = re.match(
-                    ".*avg prob of \[.*\] (\d+\.\d+) / avg prob of \[.*\] (\d+\.\d+)",
+                    ".*avg prob of \[.*\] (\d.*) / avg prob of \[.*\] (\d.*)",
                     line,
                 )
                 data["prob_new"].append(float(m.group(1)))
