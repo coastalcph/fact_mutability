@@ -68,25 +68,23 @@ def main(args, device):
 
     trainer = Trainer(
         model=model,
-        train_dataset=tokenized_ds["train_portion_to_train"],
-        eval_dataset={
-            "online_eval": tokenized_ds["train_portion_to_eval"],
-            "val": tokenized_ds["validation"],
-        },
+        output_dir=args.output_dir,
         tokenizer=tokenizer,
         data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
         compute_metrics=compute_metrics,
     )
 
+    all_metrics = {}
     for relation in args.relations:
         mut_type = relation_to_mutability[relation]
         metrics = trainer.evaluate(
             eval_dataset=tokenized_ds[relation],
-            metric_key_prefix=f"{mut_type}_{relation}",
+            metric_key_prefix=relation,
         )
         metrics[f"{relation}_samples"] = len(tokenized_ds[relation])
-        trainer.log_metrics("test", metrics)
-        trainer.save_metrics("test", metrics)
+        all_metrics.update({f"{mut_type}/{k}": v for k, v in metrics.items()})
+        trainer.save_metrics(f"{mut_type}_{relation}", metrics)
+    wandb.log(all_metrics)
 
 
 if __name__ == "__main__":
@@ -94,6 +92,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Inference")
     parser.add_argument(
         "--model_name_or_path",
+        required=True,
+        type=str,
+        help="",
+    )
+    parser.add_argument(
+        "--output_dir",
         required=True,
         type=str,
         help="",
