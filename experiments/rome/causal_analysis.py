@@ -32,16 +32,21 @@ torch.set_grad_enabled(False)
 
 
 def load_model_and_tok(args):
-    config = AutoConfig.from_pretrained(args.model_name_or_path)
-    with init_empty_weights():
-        model = AutoModelForCausalLM.from_config(config)
-    model.tie_weights()
-    model = load_checkpoint_and_dispatch(
-        model,
-        args.model_name_or_path,
-        device_map="auto",
-        no_split_module_classes=["LlamaDecoderLayer"],
-    )
+    if args.cache_dir is not None:
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model_name_or_path, cache_dir=args.cache_dir
+        )
+    else:
+        config = AutoConfig.from_pretrained(args.model_name_or_path)
+        with init_empty_weights():
+            model = AutoModelForCausalLM.from_config(config)
+        model.tie_weights()
+        model = load_checkpoint_and_dispatch(
+            model,
+            args.model_name_or_path,
+            device_map="auto",
+            no_split_module_classes=["LlamaDecoderLayer"],
+        )
     accelerator = Accelerator()
     model = accelerator.prepare(model)
     tokenizer = AutoTokenizer.from_pretrained(
@@ -333,6 +338,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_name_or_path",
         required=True,
+        type=str,
+        help="",
+    )
+    parser.add_argument(
+        "--cache_dir",
+        default=None,
         type=str,
         help="",
     )
