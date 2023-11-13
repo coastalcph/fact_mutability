@@ -27,6 +27,9 @@ def main(args, device):
 
     ds = load_dataset("coastalcph/fm_queries")
     ds["all_fm"] = ds["train"]
+    relation_to_mutability = {
+        r: m for r, m in zip(ds["all_fm"]["relation"], ds["all_fm"]["type"])
+    }
     rng = np.random.default_rng(7)
     print("Examples per relation", Counter(ds["all_fm"]["relation"]))
     for relation in args.relations:
@@ -44,7 +47,7 @@ def main(args, device):
         )
     ds.pop("all_fm")
     ds = ds.filter(lambda ex: len(ex["answer"]) > 0)
-    ds = ds.map(lambda ex: {"is_mutable": 1 if ex["type"] == "mutable" else 0})
+    ds = ds.map(lambda ex: {"label": 1 if ex["type"] == "mutable" else 0})
     if args.clf_mutability == "immutable":
         ds = ds.filter(lambda ex: ex["type"] != "immutable_n")
     elif args.clf_mutability == "immutable_n":
@@ -76,13 +79,14 @@ def main(args, device):
     )
 
     for relation in args.relations:
+        mut_type = relation_to_mutability[relation]
         metrics = trainer.evaluate(
             eval_dataset=tokenized_ds[relation],
-            metric_key_prefix=relation,
+            metric_key_prefix=f"{mut_type}_{relation}",
         )
         metrics[f"{relation}_samples"] = len(tokenized_ds[relation])
-        trainer.log_metrics(relation, metrics)
-        trainer.save_metrics(relation, metrics)
+        trainer.log_metrics("test", metrics)
+        trainer.save_metrics("test", metrics)
 
 
 if __name__ == "__main__":
