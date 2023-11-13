@@ -10,6 +10,7 @@ from datasets import load_dataset
 from mdl_classifier import compute_metrics, replace_subject
 from transformers import (
     AutoModelForSequenceClassification,
+    TrainingArguments,
     AutoTokenizer,
     DataCollatorWithPadding,
     Trainer,
@@ -68,7 +69,7 @@ def main(args, device):
 
     trainer = Trainer(
         model=model,
-        output_dir=args.output_dir,
+        args=TrainingArguments(output_dir=args.output_dir),
         tokenizer=tokenizer,
         data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
         compute_metrics=compute_metrics,
