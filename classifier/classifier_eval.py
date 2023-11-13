@@ -30,9 +30,9 @@ def main(args, device):
     relation_to_mutability = {
         r: m for r, m in zip(ds["all_fm"]["relation"], ds["all_fm"]["type"])
     }
-    rng = np.random.default_rng(7)
     print("Examples per relation", Counter(ds["all_fm"]["relation"]))
     for relation in args.relations:
+        rng = np.random.default_rng(int(relation[1:]))
         ds[relation] = ds["all_fm"].filter(lambda ex: ex["relation"] == relation)
         # Select one of the 5 templates at random.
         tuple_id_to_index = {
