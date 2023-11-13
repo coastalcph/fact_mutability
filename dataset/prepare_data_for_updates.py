@@ -32,6 +32,13 @@ def main(args):
     # Select object updates at random for each example.
     ds_data = []
     for relation in tqdm(relations, desc="Selecting updates per relation"):
+        if len(relation_to_examples[relation]) == 1:
+            print(
+                "Warning: there is only one example for relation {}, skipping relation.".format(
+                    relation
+                )
+            )
+            continue
         for ex in relation_to_examples[relation]:
             ex["updates"] = []
             updates_words = set()
@@ -53,7 +60,7 @@ def main(args):
             while (len(ex["updates"])) < 3:
                 if not possible_answers:
                     print(
-                        "Found only {} for an example in relation {}.".format(
+                        "Found only {} updates for an example in relation {}.".format(
                             len(ex["updates"]), relation
                         )
                     )
@@ -74,7 +81,7 @@ def main(args):
     print(mut_type_counts)
 
     # Split validation set.
-    validation_count = int(min(list(mut_type_counts.values())) * 0.1)
+    validation_count = max(1, int(min(list(mut_type_counts.values())) * 0.1))
     validation_indices = []
     for mut_type in mut_type_counts.keys():
         ds_mut_type = ds.filter(lambda ex: ex["type"] == mut_type)
@@ -112,7 +119,8 @@ def main(args):
             )
         )
         print(collections.Counter(ds_splitted[split]["type"]))
-    ds_splitted.push_to_hub(args.hf_dataset_name)
+    if args.hf_dataset_name is not None:
+        ds_splitted.push_to_hub(args.hf_dataset_name)
 
 
 if __name__ == "__main__":
@@ -125,7 +133,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--hf_dataset_name",
-        required=True,
+        default=None,
         type=str,
         help="",
     )
