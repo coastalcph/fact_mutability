@@ -3,7 +3,6 @@ import argparse
 import collections
 import json
 import os
-import re
 
 import numpy as np
 from datasets import Dataset, DatasetDict, load_dataset
@@ -34,13 +33,14 @@ def get_truncated_ans(func, ground_truths, pred):
             )
         )
         return None  # not necessary, but to debug
-    index_found = pred.lower().find(best_gt.lower().split()[-1])
+    last_gt_token = best_gt.lower().split()[-1]
+    index_found = pred.lower().find(last_gt_token)
     if index_found == -1:
         print(
             "Warning: did not find exact match: '{}' not in '{}'".format(best_gt, pred)
         )
         return None
-    return pred[: index_found + len(best_gt)]
+    return pred[: index_found + len(last_gt_token)]
 
 
 def main(args):
@@ -57,7 +57,6 @@ def main(args):
         for ex in relation_data:
             ex["relation"] = relation[: -len(".json")]
             ex["type"] = relation_to_mut_type[ex["relation"]]
-            relation_to_examples[relation].append(ex)
             possible_correct_answers = [o["label"] for o in ex["query"]["objects"]]
             possible_correct_answers.extend(
                 [
@@ -74,6 +73,7 @@ def main(args):
                 continue
             relation_to_answers[relation].add(pred_truncated.replace("\n", " "))
             ex["original_answer"] = pred_truncated
+            relation_to_examples[relation].append(ex)
     relations = sorted(list(relation_to_examples.keys()))
 
     # Select object updates at random for each example.
