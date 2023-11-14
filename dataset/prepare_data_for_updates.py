@@ -14,11 +14,20 @@ SEED = 7
 
 
 def get_truncated_ans(func, ground_truths, pred):
+    def find_index(short_answer, long_answer):
+        last_gt_token = short_answer.lower().split()[-1]
+        index_found = long_answer.lower().find(last_gt_token)
+        if index_found == -1:
+            return -1
+        return index_found + len(last_gt_token)
+
     best_score, best_gt = 0, None
     for gt in ground_truths:
         score = func(pred, gt)
         if score > best_score or (
-            best_gt is not None and score == best_score and len(gt) > len(best_gt)
+            best_gt is not None
+            and score == best_score
+            and find_index(gt, pred) > find_index(best_gt, pred)
         ):
             best_score, best_gt = score, gt
     if best_gt is None:
@@ -35,14 +44,13 @@ def get_truncated_ans(func, ground_truths, pred):
             )
         )
         return None  # not necessary, but to debug
-    last_gt_token = best_gt.lower().split()[-1]
-    index_found = pred.lower().find(last_gt_token)
+    index_found = find_index(best_gt, pred)
     if index_found == -1:
         print(
             "Warning: did not find exact match: '{}' not in '{}'".format(best_gt, pred)
         )
         return None
-    return pred[: index_found + len(last_gt_token)]
+    return pred[:index_found]
 
 
 def main(args):
