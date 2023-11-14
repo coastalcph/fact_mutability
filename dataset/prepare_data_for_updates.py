@@ -6,8 +6,28 @@ import argparse
 import json
 from datasets import Dataset, load_dataset, DatasetDict
 from tqdm import tqdm
+import re
+from evalutation.f1_score import normalize_answer, f1_score
 
 SEED = 7
+
+def get_truncated_ans(func, ground_truths, pred):
+    best_score, best_gt = 0, None
+    for gt in ground_truths:
+        score = func(pred, gt)
+        if score > best_score:
+            best_score, best_gt = score, gt
+    if best_gt is None:
+        print("All groundtruths scored 0 f1_score. Skipping example.".format(ground_truths, pred))
+        return None
+    if best_score < 1.0:
+        print("Warning: the best f1 score found was less than 1.0 ({}), gt={} pred={}".format(best_score, ground_truths, pred))
+        return None  # not necessary, but to debug
+    index_found = pred.lower().find(best_gt.lower().split()[-1])
+    if index_found == -1:
+        print("Warning: did not find exact match: '{}' not in '{}'".format(best_gt, pred))
+        return None
+    return pred[:index_found + len(best_gt)]
 
 
 def main(args):
@@ -25,8 +45,14 @@ def main(args):
             ex["relation"] = relation[: -len(".json")]
             ex["type"] = relation_to_mut_type[ex["relation"]]
             relation_to_examples[relation].append(ex)
-            for ans in ex["prediction"]["predictions"]:
-                relation_to_answers[relation].add(ans["answer"])
+            possible_correct_answers = [o["label"] for o in ex["query"]["objects"]]
+            possible_correct_answers.extend([a for o in ex["query"]["objects"] if "aliases" in o for a in o["aliases"]])
+            ans = ex["prediction"]["predictions"][0]["answer"]
+            pred_truncated = get_truncated_ans(f1_score, possible_correct_answers, ans)
+            if pred_truncated is None:
+                print("bug?", ex["query"]["qid"])
+                continue
+            relation_to_answers[relation].add(pred_truncated.replace('\n', ' '))
     relations = sorted(list(relation_to_examples.keys()))
 
     # Select object updates at random for each example.
