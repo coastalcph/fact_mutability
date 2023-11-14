@@ -17,7 +17,9 @@ def get_truncated_ans(func, ground_truths, pred):
     best_score, best_gt = 0, None
     for gt in ground_truths:
         score = func(pred, gt)
-        if score > best_score or (score == best_score and len(gt) > len(best_gt)):
+        if score > best_score or (
+            best_gt is not None and score == best_score and len(gt) > len(best_gt)
+        ):
             best_score, best_gt = score, gt
     if best_gt is None:
         print(
