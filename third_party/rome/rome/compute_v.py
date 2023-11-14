@@ -35,10 +35,12 @@ def compute_v(
     ).to("cuda")
 
     # Compile list of rewriting and KL x/y pairs
+    # TODO: does only predicting the last token make sense for multiple token predictions?
     rewriting_prompts, kl_prompts = [
         context.format(request["prompt"]) + tok.decode(target_ids[:-1])
         for context in context_templates
     ], ["{} is a"]
+    # TODO: add the instruction to all the prompts
     all_prompts = rewriting_prompts + kl_prompts
 
     input_tok = tok(
@@ -54,9 +56,6 @@ def compute_v(
     old_targets = torch.tensor(-100, device="cuda").repeat(
         len(rewriting_prompts), *input_tok["input_ids"].shape[1:]
     )
-    # if both are the same length then no prob.
-    # if old_answer is larger then we want to take at most target_ids
-    # if target_ids is larger then we want to fill with old_answer_ids plus -100
     for i in range(len(rewriting_prompts)):
         ex_len = input_tok["attention_mask"][i].sum()
         rewriting_targets[i, ex_len - len(target_ids) : ex_len] = target_ids
