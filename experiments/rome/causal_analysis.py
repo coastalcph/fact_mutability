@@ -47,13 +47,13 @@ def load_model_and_tok(args):
             device_map="auto",
             no_split_module_classes=["LlamaDecoderLayer"],
         )
+        print(model.hf_device_map)
     accelerator = Accelerator()
     model = accelerator.prepare(model)
     tokenizer = AutoTokenizer.from_pretrained(
         args.model_name_or_path,
         use_fast=not isinstance(model, LlamaForCausalLM),
     )
-    print(model.hf_device_map)
     return ModelAndTokenizer(
         model_name=args.model_name, model=model, tokenizer=tokenizer
     )
