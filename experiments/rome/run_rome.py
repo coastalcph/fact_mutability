@@ -29,13 +29,13 @@ def main(args):
     os.makedirs(args.output_folder, exist_ok=True)
 
     if "gpt" not in args.model_name:
-        config = AutoConfig.from_pretrained(args.model_name_or_path)
+        config = AutoConfig.from_pretrained(args.model_path)
         with init_empty_weights():
             model = AutoModelForCausalLM.from_config(config)
         model.tie_weights()
         model = load_checkpoint_and_dispatch(
             model,
-            args.model_name_or_path,
+            args.model_path,
             device_map="auto",
             no_split_module_classes=["LlamaDecoderLayer"],
             offload_folder="./",
@@ -43,8 +43,11 @@ def main(args):
         print("hf_device_map", model.hf_device_map)
         accelerator = Accelerator()
         model = accelerator.prepare(model)
+        tokenizer_name = args.model_path
+        if args.tokenizer_name is not None:
+            tokenizer_name = args.tokenizer_name
         tok = AutoTokenizer.from_pretrained(
-            args.model_name_or_path,
+            tokenizer_name,
             use_fast=not isinstance(model, LlamaForCausalLM),
         )
     else:
@@ -130,7 +133,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Inference")
     parser.add_argument(
-        "--model_name_or_path",
+        "--model_path",
         required=True,
         type=str,
         help="",
@@ -138,6 +141,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_name",
         required=True,
+        type=str,
+        help="",
+    )
+    parser.add_argument(
+        "--tokenizer_name",
+        default=None,
         type=str,
         help="",
     )
