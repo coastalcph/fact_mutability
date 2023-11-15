@@ -45,13 +45,13 @@ def main(args):
                 no_split_module_classes=["LlamaDecoderLayer"],
                 offload_folder="./",
             )
+            print("hf_device_map", model.hf_device_map)
         accelerator = Accelerator()
         model = accelerator.prepare(model)
         tok = AutoTokenizer.from_pretrained(
             args.model_name_or_path,
             use_fast=not isinstance(model, LlamaForCausalLM),
         )
-        print("hf_device_map", model.hf_device_map)
     else:
         model = AutoModelForCausalLM.from_pretrained(args.model_name).to("cuda")
         tok = AutoTokenizer.from_pretrained(args.model_name)
