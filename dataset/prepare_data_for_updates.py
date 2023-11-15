@@ -99,9 +99,7 @@ def main(args):
         for ex in relation_to_examples[relation]:
             ex["updates"] = []
             updates_words = set()
-            model_answer = set(
-                ex["prediction"]["predictions"][0]["answer"].lower().split(" ")
-            )
+            model_answer = set(ex["original_answer"].lower().split(" "))
             possible_answers = [
                 ans
                 for ans in list(relation_to_answers[relation])
@@ -127,9 +125,18 @@ def main(args):
                 updates_words.update(set(possible_answers[chosen].lower().split(" ")))
                 possible_answers = [
                     ans
-                    for ans in list(relation_to_answers[relation])
+                    for ans in possible_answers
                     if set(ans.lower().split(" ")).difference(updates_words)
                 ]
+            assert (
+                min(
+                    [
+                        len(model_answer.difference(update.lower().split(" ")))
+                        for update in ex["updates"]
+                    ]
+                )
+                > 0
+            )
             ds_data.append(ex)
     ds = Dataset.from_list(ds_data)
     print(ds)
