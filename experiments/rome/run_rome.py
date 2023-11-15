@@ -75,7 +75,7 @@ def main(args):
         for ex in ds:
             subj = ex["query"]["label"]
             prompt = ex["prediction"]["query"].replace(subj, "{}")
-            old_answer = ex["prediction"]["predictions"][0]["answer"]
+            old_answer = ex["original_answer"]
             for update in ex["updates"]:
                 requests.append(
                     {
