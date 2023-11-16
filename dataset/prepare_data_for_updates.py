@@ -50,6 +50,13 @@ def get_truncated_ans(func, ground_truths, pred):
             "Warning: did not find exact match: '{}' not in '{}'".format(best_gt, pred)
         )
         return None
+    if "\n" in pred[:index_found]:
+        print(
+            "Splitting until before the new line: '{}' (best_gt={})".format(
+                pred[:index_found], best_gt
+            )
+        )
+        return pred[:index_found].split("\n")[0]
     return pred[:index_found]
 
 
@@ -81,7 +88,7 @@ def main(args):
             if pred_truncated is None:
                 print("bug?", ex["query"]["qid"])
                 continue
-            relation_to_answers[relation].add(pred_truncated.replace("\n", " "))
+            relation_to_answers[relation].add(pred_truncated)
             ex["original_answer"] = pred_truncated
             relation_to_examples[relation].append(ex)
     relations = sorted(list(relation_to_examples.keys()))
