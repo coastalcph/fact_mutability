@@ -109,7 +109,6 @@ def main(args):
         for line in output.getvalue().split("\n"):
             if line.startswith("loss"):
                 data["loss_per_step"].append(float(line[len("loss") : line.find("=")]))
-            if line.startswith("loss") or line.startswith("Initial"):
                 m = re.match(
                     ".*avg prob of \[.*\] (\d.*) / avg prob of \[.*\] (\d.*)",
                     line,

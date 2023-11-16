@@ -23,6 +23,12 @@ def get_prob(model, inputs, targets, answer_ids):
     return torch.exp(-loss).mean().item()
 
 
+def concat_context_obj(context, obj):
+    if context[-1] != " " and obj[0] != " ":
+        return "{} {}".format(context, obj)
+    return context + obj
+
+
 def compute_v(
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
@@ -49,13 +55,17 @@ def compute_v(
 
     # Compile list of rewriting and KL x/y pairs
     rewriting_prompts, kl_prompts = [
-        context.format(request["prompt"]) + tok.decode(target_ids[:-1])
+        concat_context_obj(
+            context.format(request["prompt"]), tok.decode(target_ids[:-1])
+        )
         for context in context_templates
     ], ["{} is a"]
     # TODO: add the instruction to all the prompts
     all_prompts = rewriting_prompts + kl_prompts
     old_answer_prompts = [
-        context.format(request["prompt"]) + tok.decode(old_answer_ids[:-1])
+        concat_context_obj(
+            context.format(request["prompt"]), tok.decode(old_answer_ids[:-1])
+        )
         for context in context_templates
     ]
 
@@ -121,6 +131,12 @@ def compute_v(
                 target_init = cur_out[0, lookup_idxs[0]].detach().clone()
 
             for i, idx in enumerate(lookup_idxs):
+                # Adding this to be able to get the probability for the original
+                # answer. As the old_answer_prompts do not include the
+                # kl_prompts but the lookup ids are shared because the context
+                # of the prompts is shared with rewriting_prompts.
+                if i >= cur_out.shape[0]:
+                    continue
                 cur_out[i, idx, :] += delta
 
         return cur_out
@@ -128,14 +144,6 @@ def compute_v(
     # Optimizer
     opt = torch.optim.Adam([delta], lr=hparams.v_lr)
     nethook.set_requires_grad(False, model)
-
-    with torch.no_grad():
-        prob_old = get_prob(model, old_answer_tok, old_targets, old_answer_ids)
-        prob_new = get_prob(model, input_tok, rewriting_targets, target_ids)
-    print(
-        f"Initial avg prob of [{request['target_new']['str']}] {prob_new} / "
-        f"Initial avg prob of [{request['old_answer']['str']}] {prob_old}"
-    )
 
     # Execute optimization
     for it in range(hparams.v_num_grad_steps):
@@ -152,9 +160,9 @@ def compute_v(
             retain_output=True,
             edit_output=edit_output_fn,
         ) as tr:
+            logits = model(**input_tok).logits
             with torch.no_grad():
                 prob_old = get_prob(model, old_answer_tok, old_targets, old_answer_ids)
-            logits = model(**input_tok).logits
 
             # Compute distribution for KL divergence
             kl_logits = torch.stack(
