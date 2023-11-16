@@ -130,7 +130,7 @@ def compute_v(
             ).squeeze(2)
             old_ans_mask = (old_targets != -100).float()
             loss_old = -(loss_old * old_ans_mask).sum(1) / old_answer_ids.size(0)
-            loss_old = loss_old.mean().item()
+            prob_old = torch.exp(-loss_old.mean().item())
 
         # Forward propagation
         with nethook.TraceDict(
@@ -182,7 +182,7 @@ def compute_v(
             f"loss {np.round(loss.item(), 3)} = {np.round(nll_loss.item(), 3)} + {np.round(kl_loss.item(), 3)} + {np.round(weight_decay.item(), 3)} "
             f"avg prob of [{request['target_new']['str']}] "
             f"{torch.exp(-nll_loss_each).mean().item()}"
-            f" / avg prob of [{request['old_answer']['str']}] {torch.exp(-loss_old)}"
+            f" / avg prob of [{request['old_answer']['str']}] {prob_old}"
         )
         if loss < 5e-2:
             break
