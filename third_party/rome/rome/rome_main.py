@@ -60,6 +60,21 @@ def apply_rome_to_model(
     return model, weights_copy
 
 
+def execute_rome_and_compute_update(
+    model: AutoModelForCausalLM,
+    tok: AutoTokenizer,
+    requests: List[Dict],
+    hparams: ROMEHyperParams,
+):
+    for request in requests:
+        deltas = execute_rome(model, tok, request, hparams)
+
+        with torch.no_grad():
+            for w_name, (delta_u, delta_v) in deltas.items():
+                upd_matrix = delta_u.unsqueeze(1) @ delta_v.unsqueeze(0)
+                print("Update norm:", torch.linalg.vector_norm(upd_matrix).item())
+
+
 def execute_rome(
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,

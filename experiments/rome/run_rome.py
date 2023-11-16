@@ -19,15 +19,14 @@ from transformers import (
     set_seed,
 )
 
-from third_party.rome.rome import ROMEHyperParams, apply_rome_to_model
+from third_party.rome.rome import ROMEHyperParams
+from third_party.rome.rome.rome_main import execute_rome_and_compute_update
 from third_party.rome.util.globals import HPARAMS_DIR
 
 ROME_UPDATE_HPARAMS = ["v_lr", "v_weight_decay"]
 
 
-def main(args):
-    os.makedirs(args.output_folder, exist_ok=True)
-
+def load_model(args, verbose=False):
     if "gpt" not in args.model_name:
         config = AutoConfig.from_pretrained(args.model_path)
         with init_empty_weights():
@@ -40,7 +39,8 @@ def main(args):
             no_split_module_classes=["LlamaDecoderLayer"],
             offload_folder="./",
         )
-        print("hf_device_map", model.hf_device_map)
+        if verbose:
+            print("hf_device_map", model.hf_device_map)
         accelerator = Accelerator()
         model = accelerator.prepare(model)
         tokenizer_name = args.model_path
@@ -55,7 +55,13 @@ def main(args):
         tok = AutoTokenizer.from_pretrained(args.model_name)
 
     tok.pad_token = tok.eos_token
-    print(model.config)
+    if verbose:
+        print(model.config)
+    return model, tok
+
+
+def main(args):
+    os.makedirs(args.output_folder, exist_ok=True)
 
     requests = [
         {
@@ -94,14 +100,14 @@ def main(args):
         if getattr(args, hparam_update) is not None:
             setattr(hparams, hparam_update, getattr(args, hparam_update))
     wandb.config["rome_hparams"] = hparams
+
+    model, tok = load_model(args, verbose=True)
     results = []
     for request in tqdm(requests, desc="Requests"):
         print(request)
         output = io.StringIO()
         with redirect_stdout(output):
-            model_new, orig_weights = apply_rome_to_model(
-                model, tok, [request], hparams, return_orig_weights=True
-            )
+            execute_rome_and_compute_update(model, tok, [request], hparams)
         print(output.getvalue())
 
         # Extract data from stdout.

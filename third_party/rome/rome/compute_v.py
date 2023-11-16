@@ -24,7 +24,9 @@ def get_prob(model, inputs, targets, answer_ids):
 
 
 def concat_context_obj(context, obj):
-    if context[-1] != " " and obj[0] != " ":
+    if not obj:
+        return context
+    if context[-1] != " " and (not obj or obj[0] != " "):
         return "{} {}".format(context, obj)
     return context + obj
 

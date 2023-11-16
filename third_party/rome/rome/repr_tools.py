@@ -57,6 +57,9 @@ def get_words_idxs_in_templates(
     fill_idxs = [tmp.index("{}") for tmp in context_templates]
 
     prefixes = [tmp[: fill_idxs[i]] for i, tmp in enumerate(context_templates)]
+    # prefix{}suffix
+    # -> if prefix then prefix[-1]=" "
+    # -> if suffix then suffix[0]=" "
     suffixes = [tmp[fill_idxs[i] + 2 :] for i, tmp in enumerate(context_templates)]
     suffixes = [
         s if not s or TOKENIZER_TO_PREPEND_SPACE[type(tok)] else s[1:] for s in suffixes
@@ -76,6 +79,13 @@ def get_words_idxs_in_templates(
     # Tokenize to determine lengths
     assert len(prefixes) == len(words) == len(suffixes)
     n = len(prefixes)
+    prefixes_tok = tok(prefixes, return_special_tokens_mask=True)
+    prefix_special_tokens = [
+        len(spe) if 0 not in spe else spe.index(0)
+        for spe in prefixes_tok["special_tokens_mask"]
+    ]
+    # TODO: This currently does not support a tokenizer that adds special tokens
+    # at the end.
     batch_tok = tok([*prefixes, *words, *suffixes], add_special_tokens=False)
     prefixes_tok, words_tok, suffixes_tok = [
         batch_tok["input_ids"][i : i + n] for i in range(0, n * 3, n)
@@ -84,6 +94,7 @@ def get_words_idxs_in_templates(
         [len(el) for el in tok_list]
         for tok_list in [prefixes_tok, words_tok, suffixes_tok]
     ]
+    prefixes_len = [prefixes_len[i] + prefix_special_tokens[i] for i in range(n)]
 
     # Compute indices of last tokens
     if subtoken == "last" or subtoken == "first_after_last":
