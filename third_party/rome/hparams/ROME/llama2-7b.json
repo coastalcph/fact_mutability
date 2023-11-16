@@ -29,5 +29,9 @@
     "mom2_dataset": "wikipedia",
     "mom2_n_samples": 100000,
     "mom2_dtype": "float32",
+    "empty_prompts": [
+        "The",
+        "A"
+    ],
     "config_max_length_attr": "max_position_embeddings"
 }
