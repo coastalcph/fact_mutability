@@ -35,16 +35,24 @@ def compute_v(
     ).to("cuda")
 
     # Compile list of rewriting and KL x/y pairs
-    # TODO: does only predicting the last token make sense for multiple token predictions?
     rewriting_prompts, kl_prompts = [
         context.format(request["prompt"]) + tok.decode(target_ids[:-1])
         for context in context_templates
     ], ["{} is a"]
     # TODO: add the instruction to all the prompts
     all_prompts = rewriting_prompts + kl_prompts
+    old_answer_prompts = [
+        context.format(request["prompt"]) + tok.decode(old_answer_ids[:-1])
+        for context in context_templates
+    ]
 
     input_tok = tok(
         [prompt.format(request["subject"]) for prompt in all_prompts],
+        return_tensors="pt",
+        padding=True,
+    ).to("cuda")
+    old_answer_tok = tok(
+        [prompt.format(request["subject"]) for prompt in old_answer_prompts],
         return_tensors="pt",
         padding=True,
     ).to("cuda")
@@ -53,18 +61,16 @@ def compute_v(
     rewriting_targets = torch.tensor(-100, device="cuda").repeat(
         len(rewriting_prompts), *input_tok["input_ids"].shape[1:]
     )
-    old_targets = torch.tensor(-100, device="cuda").repeat(
-        len(rewriting_prompts), *input_tok["input_ids"].shape[1:]
-    )
     for i in range(len(rewriting_prompts)):
         ex_len = input_tok["attention_mask"][i].sum()
         rewriting_targets[i, ex_len - len(target_ids) : ex_len] = target_ids
-        if len(target_ids) <= len(old_answer_ids):
-            old_targets[i, ex_len - len(target_ids) : ex_len] = old_answer_ids[
-                : len(target_ids)
-            ]
-        else:
-            old_targets[i, ex_len - len(old_answer_ids) : ex_len] = old_answer_ids
+
+    old_targets = torch.tensor(-100, device="cuda").repeat(
+        len(old_answer_prompts), *old_answer_tok["input_ids"].shape[1:]
+    )
+    for i in range(len(old_answer_prompts)):
+        ex_len = old_answer_tok["attention_mask"][i].sum()
+        old_targets[i, ex_len - len(old_answer_ids) : ex_len] = old_answer_ids
 
     # Compute indices of the tokens where the fact is looked up
     lookup_idxs = [
@@ -114,6 +120,18 @@ def compute_v(
     for it in range(hparams.v_num_grad_steps):
         opt.zero_grad()
 
+        with torch.no_grad():
+            logits = model(**old_answer_tok).logits
+            log_probs = torch.log_softmax(logits, dim=2)
+            loss_old = torch.gather(
+                log_probs,
+                2,
+                torch.where(old_targets != -100, old_targets, 0).unsqueeze(2),
+            ).squeeze(2)
+            old_ans_mask = (old_targets != -100).float()
+            loss_old = -(loss_old * old_ans_mask).sum(1) / old_answer_ids.size(0)
+            loss_old = loss_old.mean().item()
+
         # Forward propagation
         with nethook.TraceDict(
             module=model,
@@ -149,13 +167,6 @@ def compute_v(
         ).squeeze(2)
         mask = (rewriting_targets != -100).float()
 
-        loss_old = torch.gather(
-            log_probs,
-            2,
-            torch.where(old_targets != -100, old_targets, 0).unsqueeze(2),
-        ).squeeze(2)
-        loss_old = -(loss_old * mask).sum(1) / target_ids.size(0)
-
         # Aggregate total losses
         nll_loss_each = -(loss * mask).sum(1) / target_ids.size(0)
         nll_loss = nll_loss_each.mean()
@@ -171,8 +182,7 @@ def compute_v(
             f"loss {np.round(loss.item(), 3)} = {np.round(nll_loss.item(), 3)} + {np.round(kl_loss.item(), 3)} + {np.round(weight_decay.item(), 3)} "
             f"avg prob of [{request['target_new']['str']}] "
             f"{torch.exp(-nll_loss_each).mean().item()}"
-            f" / avg prob of [{request['old_answer']['str']}] "
-            f"{torch.exp(-loss_old).mean().item()}"
+            f" / avg prob of [{request['old_answer']['str']}] {torch.exp(-loss_old)}"
         )
         if loss < 5e-2:
             break
