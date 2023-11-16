@@ -130,7 +130,7 @@ def compute_v(
             ).squeeze(2)
             old_ans_mask = (old_targets != -100).float()
             loss_old = -(loss_old * old_ans_mask).sum(1) / old_answer_ids.size(0)
-            prob_old = torch.exp(-loss_old.mean().item())
+            prob_old = torch.exp(-loss_old).mean().item()
 
         # Forward propagation
         with nethook.TraceDict(
