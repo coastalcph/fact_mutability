@@ -10,6 +10,19 @@ from util import nethook
 from .rome_hparams import ROMEHyperParams
 
 
+def get_prob(model, inputs, targets, answer_ids):
+    logits = model(**inputs).logits
+    log_probs = torch.log_softmax(logits, dim=2)
+    loss = torch.gather(
+        log_probs,
+        2,
+        torch.where(targets != -100, targets, 0).unsqueeze(2),
+    ).squeeze(2)
+    mask = (targets != -100).float()
+    loss = -(loss * mask).sum(1) / answer_ids.size(0)
+    return torch.exp(-loss).mean().item()
+
+
 def compute_v(
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
@@ -116,21 +129,17 @@ def compute_v(
     opt = torch.optim.Adam([delta], lr=hparams.v_lr)
     nethook.set_requires_grad(False, model)
 
+    with torch.no_grad():
+        prob_old = get_prob(model, old_answer_tok, old_targets, old_answer_ids)
+        prob_new = get_prob(model, input_tok, rewriting_targets, target_ids)
+    print(
+        f"Initial avg prob of [{request['target_new']['str']}] {prob_new} / "
+        f"Initial avg prob of [{request['old_answer']['str']}] {prob_old}"
+    )
+
     # Execute optimization
     for it in range(hparams.v_num_grad_steps):
         opt.zero_grad()
-
-        with torch.no_grad():
-            logits = model(**old_answer_tok).logits
-            log_probs = torch.log_softmax(logits, dim=2)
-            loss_old = torch.gather(
-                log_probs,
-                2,
-                torch.where(old_targets != -100, old_targets, 0).unsqueeze(2),
-            ).squeeze(2)
-            old_ans_mask = (old_targets != -100).float()
-            loss_old = -(loss_old * old_ans_mask).sum(1) / old_answer_ids.size(0)
-            prob_old = torch.exp(-loss_old).mean().item()
 
         # Forward propagation
         with nethook.TraceDict(
@@ -143,6 +152,8 @@ def compute_v(
             retain_output=True,
             edit_output=edit_output_fn,
         ) as tr:
+            with torch.no_grad():
+                prob_old = get_prob(model, old_answer_tok, old_targets, old_answer_ids)
             logits = model(**input_tok).logits
 
             # Compute distribution for KL divergence
