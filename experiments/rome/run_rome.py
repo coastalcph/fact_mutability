@@ -36,8 +36,8 @@ def load_model(args, verbose=False):
         if args.layers_to_cpu:
             device_map = {
                 "model.embed_tokens": 0,
-                **{f"model.layers.{i}": 0 for i in range(29)},
-                **{f"model.layers.{i}": "cpu" for i in range(29, 32)},
+                **{f"model.layers.{i}": 0 for i in range(28)},
+                **{f"model.layers.{i}": "cpu" for i in range(28, 32)},
                 "model.norm": "cpu",
                 "lm_head": "cpu",
             }
