@@ -160,6 +160,11 @@ if __name__ == "__main__":
         help="",
     )
     parser.add_argument(
+        "--layers_to_cpu",
+        action="store_true",
+        help="",
+    )
+    parser.add_argument(
         "--tokenizer_name",
         default=None,
         type=str,
