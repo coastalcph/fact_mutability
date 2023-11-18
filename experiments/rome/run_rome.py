@@ -32,10 +32,19 @@ def load_model(args, verbose=False):
         with init_empty_weights():
             model = AutoModelForCausalLM.from_config(config)
         model.tie_weights()
+        device_map = "auto"
+        if args.layers_to_cpu:
+            device_map = {
+                "model.embed_tokens": 0,
+                **{f"model.layers.{i}": 0 for i in range(29)},
+                **{f"model.layers.{i}": "cpu" for i in range(29, 32)},
+                "model.norm": "cpu",
+                "lm_head": "cpu",
+            }
         model = load_checkpoint_and_dispatch(
             model,
             args.model_path,
-            device_map="auto",
+            device_map=device_map,
             no_split_module_classes=["LlamaDecoderLayer"],
             offload_folder="./",
         )
