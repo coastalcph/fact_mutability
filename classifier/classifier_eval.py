@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import wandb
 from datasets import load_dataset
-from mdl_classifier import compute_metrics, replace_subject
+from mdl_classifier import compute_metrics
 from transformers import (
     AutoModelForSequenceClassification,
     TrainingArguments,
@@ -15,6 +15,13 @@ from transformers import (
     DataCollatorWithPadding,
     Trainer,
 )
+
+
+def replace_subject(prompt_format, tokenizer, example):
+    query = example["query"].replace("_X_ .", "_X_.")
+    text = query.replace("_X_.", example["answer"][0]["name"]).strip()
+    text = prompt_format.format(text)
+    return {"text": text, **tokenizer(text)}
 
 
 def main(args, device):
@@ -55,7 +62,7 @@ def main(args, device):
         ds = ds.filter(lambda ex: ex["type"] != "immutable")
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
-    tokenized_ds = ds.map(partial(replace_subject, tokenizer))
+    tokenized_ds = ds.map(partial(replace_subject, args.prompt_format, tokenizer))
     print("Example of training example:", tokenized_ds["train"][0])
     print("Loading model")
     id2label = {1: "MUTABLE", 0: "IMMUTABLE"}
@@ -98,6 +105,12 @@ if __name__ == "__main__":
         help="",
     )
     parser.add_argument(
+        "--prompt_format",
+        required=None,
+        type=str,
+        help="",
+    )
+    parser.add_argument(
         "--output_dir",
         required=True,
         type=str,
@@ -112,4 +125,6 @@ if __name__ == "__main__":
     )
     parser.add_argument("--relations", nargs="+", default=[])
     args = parser.parse_args()
+    if args.prompt_format is not None:
+        args.prompt_format = bytes(args.prompt_format, "utf-8").decode("unicode_escape")
     main(args, device)
