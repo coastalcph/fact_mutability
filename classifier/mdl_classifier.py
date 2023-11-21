@@ -36,8 +36,11 @@ from transformers import (
     Trainer,
     TrainingArguments,
 )
+from inference import TEMPLATES
 
 logger = logging.getLogger(__name__)
+TEMPLATE_TO_USE = TEMPLATES["query_in_response"]
+INSTRUCTION = "Complete the fact in as few words as possible"
 
 
 @dataclass
@@ -88,10 +91,12 @@ class ModelArguments:
     )
 
 
-def replace_subject(tokenizer, example):
+def replace_subject(use_instruction, tokenizer, example):
     query = example["query"].replace("_X_ .", "_X_.")
     text = query.replace("_X_.", example["answer"][0]["name"]).strip()
-    return tokenizer(text)
+    if use_instruction:
+        text = TEMPLATE_TO_USE.format(INSTRUCTION, text)
+    return {"text": text, **tokenizer(text)}
 
 
 def compute_metrics(eval_pred):
@@ -253,7 +258,13 @@ def main(device):
     print(f'train_portion_to_train: {len(ds["train_portion_to_train"])}')
     print(f'train_portion_to_eval: {len(ds["train_portion_to_eval"])}')
 
-    tokenized_ds = ds.map(partial(replace_subject, tokenizer))
+    tokenized_ds = ds.map(
+        partial(
+            replace_subject,
+            use_instruction="alpaca" in model_args.model_name_or_path,
+            tokenizer=tokenizer,
+        )
+    )
     print("Example of training example:", tokenized_ds["train"][0])
     print("Loading model")
     id2label = {1: "MUTABLE", 0: "IMMUTABLE"}
