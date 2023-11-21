@@ -20,6 +20,8 @@ from transformers import (
 def replace_subject(prompt_format, tokenizer, example):
     query = example["query"].replace("_X_ .", "_X_.")
     text = query.replace("_X_.", example["answer"][0]["name"]).strip()
+    if prompt_format != "{}":
+        text = text[0].lower() + text[1:]
     text = prompt_format.format(text)
     return {"text": text, **tokenizer(text)}
 
