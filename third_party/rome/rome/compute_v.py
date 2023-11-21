@@ -20,7 +20,7 @@ def get_prob(model, inputs, targets, answer_ids):
     ).squeeze(2)
     mask = (targets != -100).float()
     loss = -(loss * mask).sum(1) / answer_ids.size(0)
-    return torch.exp(-loss).mean().item()
+    return torch.exp(-loss)
 
 
 def concat_context_obj(context, obj):
@@ -203,7 +203,12 @@ def compute_v(
             f"loss {np.round(loss.item(), 3)} = {np.round(nll_loss.item(), 3)} + {np.round(kl_loss.item(), 3)} + {np.round(weight_decay.item(), 3)} "
             f"avg prob of [{request['target_new']['str']}] "
             f"{torch.exp(-nll_loss_each).mean().item()}"
-            f" / avg prob of [{request['old_answer']['str']}] {prob_old}"
+            f" / avg prob of [{request['old_answer']['str']}] {prob_old.mean().item()}"
+        )
+        print(
+            f"first token prob of [{request['target_new']['str']}] "
+            f"{torch.exp(-nll_loss_each)[0].item()}"
+            f" / first token prob of [{request['old_answer']['str']}] {prob_old[0].item()}"
         )
         if loss < 5e-2:
             break

@@ -130,10 +130,19 @@ def main(args):
                 )
                 data["prob_new"].append(float(m.group(1)))
                 data["prob_old"].append(float(m.group(2)))
-            elif line.startswith("Update norm:"):
-                data["update_matrix_norm"].append(float(line[len("Update norm:") :]))
-
-        assert len(data["update_matrix_norm"]) == 1, data["update_matrix_norm"]
+            elif line.startswith("first token prob of"):
+                m = re.match(
+                    "first token prob of \[.*\] (\d.*) / first token prob of \[.*\] (\d.*)",
+                    line,
+                )
+                data["prob_new_token"].append(float(m.group(1)))
+                data["prob_old_token"].append(float(m.group(2)))
+            elif line.startswith("Update norm"):
+                m = re.match(
+                    "Update norm \((.*)\): (.*)",
+                    line,
+                )
+                data[f"update_matrix_norm_{m.group(1)}"].append(float(m.group(2)))
         data["request"] = request
         print(data)
         print("----------------------------------------------")

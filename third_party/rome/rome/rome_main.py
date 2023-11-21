@@ -72,7 +72,12 @@ def execute_rome_and_compute_update(
         with torch.no_grad():
             for w_name, (delta_u, delta_v) in deltas.items():
                 upd_matrix = delta_u.unsqueeze(1) @ delta_v.unsqueeze(0)
-                print("Update norm:", torch.linalg.vector_norm(upd_matrix).item())
+                for n in [1, 2, float("inf")]:
+                    print(
+                        "Update norm ({}): {}".format(
+                            n, torch.linalg.vector_norm(upd_matrix, ord=n).item()
+                        )
+                    )
 
 
 def execute_rome(
