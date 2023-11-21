@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from util import nethook
+from util.globals import TOKENIZER_TO_PREPEND_SPACE
 
 from .ft_hparams import FTHyperParams
 
@@ -28,7 +29,6 @@ def apply_ft_to_model(
     weights_copy = {}
     if copy:
         model = deepcopy(model)
-
     deltas = execute_ft(model, tok, requests, hparams)
 
     with torch.no_grad():
@@ -38,6 +38,7 @@ def apply_ft_to_model(
                 weights_copy[w_name] = w.detach().clone()
 
             w[...] += upd_matrix
+            print("Update norm:", torch.linalg.vector_norm(upd_matrix).item())
 
     print(f"New weights successfully inserted into {list(deltas.keys())}")
 
@@ -55,11 +56,10 @@ def execute_ft(
     Executes the FT update algorithm for the specified update at the specified layer
     Invariant: model at beginning of function == model at end of function
     """
-
     # Update target and print info
     requests = deepcopy(requests)
     for request in requests:
-        if request["target_new"]["str"][0] != " ":
+        if TOKENIZER_TO_PREPEND_SPACE[type(tok)] and request["target_new"]["str"][0] != " ":
             # Space required for correct tokenization
             request["target_new"]["str"] = " " + request["target_new"]["str"]
         print(
@@ -81,6 +81,7 @@ def execute_ft(
     # Define inputs
     texts = [r["prompt"].format(r["subject"]) for r in requests]
     targets = [r["target_new"]["str"] for r in requests]
+    old_targets = [r["old_answer"]["str"] for r in requests]
 
     # Configure optimizer / gradients
     wd = (
@@ -106,13 +107,15 @@ def execute_ft(
         print(20 * "=")
         loss_meter.reset()
 
-        for txt, tgt in zip(
-            chunks(texts, hparams.batch_size), chunks(targets, hparams.batch_size)
+        for txt, tgt, old_tgt in zip(
+            chunks(texts, hparams.batch_size), chunks(targets, hparams.batch_size),
+            chunks(old_targets, hparams.batch_size)
         ):
+            
             inputs = tok(txt, return_tensors="pt", padding=True).to("cuda")
-            target_ids = tok(tgt, return_tensors="pt", padding=True)["input_ids"].to(
-                "cuda"
-            )
+            target_ids = tok(tgt, return_tensors="pt", padding=True)["input_ids"].to("cuda")
+            old_target_ids = tok(old_tgt, return_tensors="pt", padding=True)["input_ids"].to("cuda")
+
             last_token_inds = inputs["attention_mask"].sum(dim=1) - 1
             loss_mask = target_ids != tok.unk_token_id
 
@@ -121,11 +124,24 @@ def execute_ft(
             probs = torch.nn.functional.log_softmax(
                 model(**inputs).logits[torch.arange(bs), last_token_inds], dim=-1
             )
-            loss = -(torch.gather(probs, 1, target_ids) * loss_mask).sum(
+            loss_each = -(torch.gather(probs, 1, target_ids) * loss_mask).sum(
                 1
             ) / loss_mask.sum(1)
-            loss = loss.mean()
-            print(f"Batch loss {loss.item()}")
+            loss = loss_each.mean()
+
+            with torch.no_grad():
+                old_loss_mask = old_target_ids != tok.unk_token_id
+                old_loss = -(torch.gather(probs, 1, old_target_ids) * old_loss_mask).sum(
+                1) / loss_mask.sum(1)
+                old_prob = torch.exp(-old_loss).mean().item()
+
+            print(
+            f"loss {np.round(loss.item(), 3)} = "
+            f"avg prob of [{request['target_new']['str']}] "
+            f"{torch.exp(-loss_each).mean().item()}"
+            f" / avg prob of [{request['old_answer']['str']}] {old_prob}"
+            )
+
             loss_meter.update(loss.item(), n=bs)
 
             if loss.item() >= 1e-2:
