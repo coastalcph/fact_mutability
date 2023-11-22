@@ -8,6 +8,10 @@ from util import nethook
 from util.globals import TOKENIZER_TO_PREPEND_SPACE
 
 from .ft_hparams import FTHyperParams
+from inference import TEMPLATES
+
+TEMPLATE_TO_USE = TEMPLATES["query_in_response"]
+INSTRUCTION = "Complete the fact in as few words as possible"
 
 
 def concat_context_obj(context, obj):
@@ -104,6 +108,8 @@ def execute_ft(
 
     # Define inputs
     text = request["prompt"].format(request["subject"])
+    if hparams.add_instructions:
+        text = TEMPLATE_TO_USE.format(INSTRUCTION, text)
     target = request["target_new"]["str"]
     old_target = request["old_answer"]["str"]
     target_ids = torch.tensor(tok.convert_tokens_to_ids(tok.tokenize(target))).to(
