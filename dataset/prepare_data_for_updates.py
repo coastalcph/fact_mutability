@@ -247,20 +247,21 @@ def main(args):
     ds_splitted = get_dataset_dict(test_ds, val_ds)
 
     if args.hf_dataset_name is not None:
-        previous_val = load_dataset(args.hf_dataset_name)["validation"]
-        previous_val = collections.Counter(
-            [f"{ex['relation']}_{ex['query']['qid']}" for ex in previous_val]
-        )
-        curr_val = collections.Counter(
-            [
-                f"{ex['relation']}_{ex['query']['qid']}"
-                for ex in ds_splitted["validation"]
-            ]
-        )
-        if previous_val != curr_val:
-            print("previous_val", previous_val)
-            print("curr_val", curr_val)
-            raise Exception("Validation splits are different")
+        if args.check_validation_unchanged:
+            previous_val = load_dataset(args.hf_dataset_name)["validation"]
+            previous_val = collections.Counter(
+                [f"{ex['relation']}_{ex['query']['qid']}" for ex in previous_val]
+            )
+            curr_val = collections.Counter(
+                [
+                    f"{ex['relation']}_{ex['query']['qid']}"
+                    for ex in ds_splitted["validation"]
+                ]
+            )
+            if previous_val != curr_val:
+                print("previous_val", previous_val)
+                print("curr_val", curr_val)
+                raise Exception("Validation splits are different")
         ds_splitted.push_to_hub(args.hf_dataset_name)
 
 
@@ -278,5 +279,12 @@ if __name__ == "__main__":
         type=str,
         help="",
     )
+    parser.add_argument("--check_validation_unchanged", action="store_true")
+    parser.add_argument(
+        "--no_check_validation_unchanged",
+        dest="check_validation_unchanged",
+        action="store_false",
+    )
+    parser.set_defaults(check_validation_unchanged=True)
     args = parser.parse_args()
     main(args)
