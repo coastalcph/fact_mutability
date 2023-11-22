@@ -5,6 +5,7 @@ import json
 import os
 import re
 from contextlib import redirect_stdout
+from dataclasses import asdict
 
 import torch
 import wandb
@@ -108,7 +109,8 @@ def main(args):
     for hparam_update in ROME_UPDATE_HPARAMS:
         if getattr(args, hparam_update) is not None:
             setattr(hparams, hparam_update, getattr(args, hparam_update))
-    wandb.config["rome_hparams"] = hparams
+    for k, v in asdict(hparams):
+        wandb.config[f"rome_hparams_{k}"] = v
 
     model, tok = load_model(args, verbose=True)
     results = []

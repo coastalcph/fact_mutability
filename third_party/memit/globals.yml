@@ -8,7 +8,7 @@
   KV_DIR: "/projects/nlp/data/data/fact_mutability/third_party/memit/kvs"
 
   # Hyperparameters
-  HPARAMS_DIR: "/projects/nlp/data/data/fact_mutability/third_party/memit/hparams"
+  HPARAMS_DIR: "third_party/memit/hparams"
 
   # Remote URLs
   REMOTE_ROOT_URL: "https://memit.baulab.info"

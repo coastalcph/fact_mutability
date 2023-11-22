@@ -5,6 +5,7 @@ import json
 import os
 import re
 from contextlib import redirect_stdout
+from dataclasses import asdict
 
 import torch
 import wandb
@@ -83,7 +84,8 @@ def main(args):
     for hparam_update in UPDATE_HPARAMS:
         if getattr(args, hparam_update) is not None:
             setattr(hparams, hparam_update, getattr(args, hparam_update))
-    wandb.config["x_hparams"] = hparams
+    for k, v in asdict(hparams):
+        wandb.config[f"ft_hparams_{k}"] = v
     results = []
     for request in tqdm(requests, desc="Requests"):
         print(request)
