@@ -64,7 +64,7 @@ def compute_v(
     kl_prompts = ["{} is a"]
     if add_instructions:
         kl_prompts = [TEMPLATE_TO_USE.format(INSTRUCTION, p) for p in kl_prompts]
-    rewriting_prompts, kl_prompts = [
+    rewriting_prompts = [
         concat_context_obj(
             context.format(request["prompt"]), tok.decode(target_ids[:-1])
         )
