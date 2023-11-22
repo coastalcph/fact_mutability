@@ -91,7 +91,7 @@ class ModelArguments:
     )
 
 
-def replace_subject(use_instruction, tokenizer, example):
+def replace_subject(example, use_instruction, tokenizer):
     query = example["query"].replace("_X_ .", "_X_.")
     text = query.replace("_X_.", example["answer"][0]["name"]).strip()
     if use_instruction:
