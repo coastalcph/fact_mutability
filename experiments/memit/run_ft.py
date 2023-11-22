@@ -20,18 +20,19 @@ from transformers import (
 )
 
 from third_party.memit.baselines.ft import FTHyperParams as HyperParams
-from third_party.memit.baselines.ft import apply_ft_to_model as apply_x_to_model
+from third_party.memit.baselines.ft import execute_ft
 from third_party.memit.util.globals import HPARAMS_DIR
 
-UPDATE_HPARAMS = ["lr", "weight_decay"] 
+UPDATE_HPARAMS = ["lr", "weight_decay"]
+
 
 def main(args):
     os.makedirs(args.output_folder, exist_ok=True)
 
     if "gpt" not in args.model_name:
         model = AutoModelForCausalLM.from_pretrained(
-                args.model_name_or_path, cache_dir=args.cache_dir
-            )
+            args.model_name_or_path, cache_dir=args.cache_dir
+        )
         accelerator = Accelerator()
         model = accelerator.prepare(model)
         tok = AutoTokenizer.from_pretrained(
@@ -77,22 +78,29 @@ def main(args):
     params_path = os.path.join(
         HPARAMS_DIR, "FT", f"{args.model_name.replace('/', '_')}.json"
     )
-    print('Params path', params_path)
+    print("Params path", params_path)
     hparams = HyperParams.from_json(params_path)
     for hparam_update in UPDATE_HPARAMS:
         if getattr(args, hparam_update) is not None:
-            setattr(hparams, hparam_update, getattr(args, hparam_update))    
+            setattr(hparams, hparam_update, getattr(args, hparam_update))
     wandb.config["x_hparams"] = hparams
     results = []
     for request in tqdm(requests, desc="Requests"):
         print(request)
         output = io.StringIO()
         with redirect_stdout(output):
-            model_new, orig_weights = apply_x_to_model(
-                model, tok, [request], hparams, return_orig_weights=True
-            )
+            deltas = execute_ft(model, tok, request, hparams)
+            for param_name, upd_matrix in deltas.items():
+                for n in [1, 2, float("inf")]:
+                    print(
+                        "Update norm [{}] ({}): {}".format(
+                            param_name,
+                            n,
+                            torch.linalg.vector_norm(upd_matrix, ord=n).item(),
+                        )
+                    )
         print(output.getvalue())
-        
+
         # Extract data from stdout.
         data = collections.defaultdict(list)
         for line in output.getvalue().split("\n"):
@@ -104,10 +112,21 @@ def main(args):
                 )
                 data["prob_new"].append(float(m.group(1)))
                 data["prob_old"].append(float(m.group(2)))
-            elif line.startswith("Update norm:"):
-                data["update_matrix_norm"].append(float(line[len("Update norm:") :]))
+            elif line.startswith("first token prob of"):
+                m = re.match(
+                    "first token prob of \[.*\] (\d.*) / first token prob of \[.*\] (\d.*)",
+                    line,
+                )
+                data["prob_new_token"].append(float(m.group(1)))
+                data["prob_old_token"].append(float(m.group(2)))
+            elif line.startswith("Update norm"):
+                m = re.match(
+                    "Update norm \[(.*)\] \((.*)\): (.*)",
+                    line,
+                )
 
-        #assert len(data["update_matrix_norm"]) == 1, data["update_matrix_norm"]
+                data[f"l{m.group(2)}-{m.group(1)}"].append(float(m.group(3)))
+
         data["request"] = request
         print(data)
         print("----------------------------------------------")
