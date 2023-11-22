@@ -11,7 +11,7 @@ from util.generate import generate_fast
 from util.globals import TOKENIZER_TO_PREPEND_SPACE
 
 from .compute_u import compute_u
-from .compute_v import compute_v
+from .compute_v import compute_v, TEMPLATE_TO_USE, INSTRUCTION
 from .rome_hparams import ROMEHyperParams
 
 CONTEXT_TEMPLATES_CACHE = None
@@ -128,7 +128,7 @@ def execute_rome(
                 tok,
                 hparams.context_template_length_params,
                 hparams.empty_prompts,
-                request["seed"],
+                hparams.add_instructions,
             ),
         )
         print("Left vector shape:", left_vector.shape)
@@ -144,8 +144,9 @@ def execute_rome(
                 tok,
                 hparams.context_template_length_params,
                 hparams.empty_prompts,
-                request["seed"],
+                hparams.add_instructions,
             ),
+            hparams.add_instructions,
         )
         print("Right vector shape:", right_vector.shape)
 
@@ -189,7 +190,7 @@ def upd_matrix_match_shape(matrix: torch.Tensor, shape: torch.Size) -> torch.Ten
         )
 
 
-def get_context_templates(model, tok, length_params, empty_prompts, seed):
+def get_context_templates(model, tok, length_params, empty_prompts, add_instructions):
     global CONTEXT_TEMPLATES_CACHE
     print("Getting context templates")
     if CONTEXT_TEMPLATES_CACHE is None:
@@ -211,7 +212,10 @@ def get_context_templates(model, tok, length_params, empty_prompts, seed):
                 [],
             )
         ]
-
+        if add_instructions:
+            CONTEXT_TEMPLATES_CACHE = [
+                TEMPLATE_TO_USE.format(INSTRUCTION, c) for c in CONTEXT_TEMPLATES_CACHE
+            ]
         print(f"Cached context templates {CONTEXT_TEMPLATES_CACHE}")
 
     return CONTEXT_TEMPLATES_CACHE

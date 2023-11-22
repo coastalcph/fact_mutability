@@ -8,6 +8,10 @@ from rome import repr_tools
 from util import nethook
 
 from .rome_hparams import ROMEHyperParams
+from inference import TEMPLATES
+
+TEMPLATE_TO_USE = TEMPLATES["query_in_response"]
+INSTRUCTION = "Complete the fact in as few words as possible"
 
 
 def get_prob(model, inputs, targets, answer_ids):
@@ -39,6 +43,7 @@ def compute_v(
     layer: int,
     left_vector: torch.Tensor,
     context_templates: List[str],
+    add_instructions: bool = False,
 ) -> torch.Tensor:
     """
     Computes the value (right) vector for the rank-1 update.
@@ -56,13 +61,15 @@ def compute_v(
     ).to("cuda")
 
     # Compile list of rewriting and KL x/y pairs
+    kl_prompts = ["{} is a"]
+    if add_instructions:
+        kl_prompts = [TEMPLATE_TO_USE.format(INSTRUCTION, p) for p in kl_prompts]
     rewriting_prompts, kl_prompts = [
         concat_context_obj(
             context.format(request["prompt"]), tok.decode(target_ids[:-1])
         )
         for context in context_templates
-    ], ["{} is a"]
-    # TODO: add the instruction to all the prompts
+    ]
     all_prompts = rewriting_prompts + kl_prompts
     old_answer_prompts = [
         concat_context_obj(
