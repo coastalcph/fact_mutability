@@ -33,6 +33,5 @@
         "The",
         "A"
     ],
-    "config_max_length_attr": "max_position_embeddings",
-    "add_instructions": true
+    "config_max_length_attr": "max_position_embeddings"
 }
