@@ -17,14 +17,16 @@ INSTRUCTION = "Complete the fact in as few words as possible"
 def get_prob(model, inputs, targets, answer_ids):
     logits = model(**inputs).logits
     log_probs = torch.log_softmax(logits, dim=2)
-    loss = torch.gather(
+    loss = -torch.gather(
         log_probs,
         2,
         torch.where(targets != -100, targets, 0).unsqueeze(2),
     ).squeeze(2)
     mask = (targets != -100).float()
-    loss = -(loss * mask).sum(1) / answer_ids.size(0)
-    return torch.exp(-loss)
+    first_token_indices = torch.argmax(mask, dim=-1)
+    loss_first_token = loss[torch.arange(len(loss)), first_token_indices]
+    loss = (loss * mask).sum(1) / answer_ids.size(0)
+    return torch.exp(-loss), torch.exp(-loss_first_token)
 
 
 def concat_context_obj(context, obj):
@@ -171,7 +173,9 @@ def compute_v(
         ) as tr:
             logits = model(**input_tok).logits
             with torch.no_grad():
-                prob_old = get_prob(model, old_answer_tok, old_targets, old_answer_ids)
+                prob_old, prob_old_first_token = get_prob(
+                    model, old_answer_tok, old_targets, old_answer_ids
+                )
 
             # Compute distribution for KL divergence
             kl_logits = torch.stack(
@@ -188,15 +192,17 @@ def compute_v(
         # Compute loss on rewriting targets
         log_probs = torch.log_softmax(logits, dim=2)
 
-        loss = torch.gather(
+        loss = -torch.gather(
             log_probs,
             2,
             torch.where(rewriting_targets != -100, rewriting_targets, 0).unsqueeze(2),
         ).squeeze(2)
         mask = (rewriting_targets != -100).float()
+        first_token_indices = torch.argmax(mask, dim=-1)
+        loss_first_token = loss[torch.arange(len(loss)), first_token_indices]
 
         # Aggregate total losses
-        nll_loss_each = -(loss * mask).sum(1) / target_ids.size(0)
+        nll_loss_each = (loss * mask).sum(1) / target_ids.size(0)
         nll_loss = nll_loss_each.mean()
         kl_loss = hparams.kl_factor * torch.nn.functional.kl_div(
             kl_distr_init, kl_log_probs, log_target=True, reduction="batchmean"
@@ -212,10 +218,11 @@ def compute_v(
             f"{torch.exp(-nll_loss_each).mean().item()}"
             f" / avg prob of [{request['old_answer']['str']}] {prob_old.mean().item()}"
         )
+        # We assume the first context template is the empty context.
         print(
             f"first token prob of [{request['target_new']['str']}] "
-            f"{torch.exp(-nll_loss_each)[0].item()}"
-            f" / first token prob of [{request['old_answer']['str']}] {prob_old[0].item()}"
+            f"{torch.exp(-loss_first_token)[0].item()}"
+            f" / first token prob of [{request['old_answer']['str']}] {prob_old_first_token[0].item()}"
         )
         if loss < 5e-2:
             break
