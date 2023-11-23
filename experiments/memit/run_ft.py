@@ -84,7 +84,7 @@ def main(args):
     for hparam_update in UPDATE_HPARAMS:
         if getattr(args, hparam_update) is not None:
             setattr(hparams, hparam_update, getattr(args, hparam_update))
-    for k, v in asdict(hparams):
+    for k, v in asdict(hparams).items():
         wandb.config[f"ft_hparams_{k}"] = v
     results = []
     for request in tqdm(requests, desc="Requests"):

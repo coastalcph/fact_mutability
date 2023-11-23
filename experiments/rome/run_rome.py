@@ -109,7 +109,7 @@ def main(args):
     for hparam_update in ROME_UPDATE_HPARAMS:
         if getattr(args, hparam_update) is not None:
             setattr(hparams, hparam_update, getattr(args, hparam_update))
-    for k, v in asdict(hparams):
+    for k, v in asdict(hparams).items():
         wandb.config[f"rome_hparams_{k}"] = v
 
     model, tok = load_model(args, verbose=True)
