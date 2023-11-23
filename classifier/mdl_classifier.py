@@ -218,6 +218,7 @@ def main(device):
     os.makedirs(training_args.output_dir)
 
     tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
+    tokenizer.pad_token = tokenizer.eos_token
     ds = load_dataset(data_args.dataset_name, use_auth_token=True)
     ds = ds.rename_column("is_mutable", "label").shuffle(seed=training_args.seed)
     if data_args.subsample_train < 1.0:
@@ -276,6 +277,7 @@ def main(device):
         id2label=id2label,
         label2id=label2id,
     ).to(device)
+    model.config.pad_token_id = tokenizer.pad_token_id
 
     trainer = Trainer(
         model=model,
