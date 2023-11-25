@@ -28,6 +28,8 @@ def replace_subject(prompt_format, tokenizer, example):
 
 
 def main(args, device):
+    os.makedirs(args.output_dir, exist_ok=True)
+
     project_name = "mdl_mutability_classifiers"
     if "WANDB_PROJECT" in os.environ:
         project_name = os.getenv("WANDB_PROJECT")
