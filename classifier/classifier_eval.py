@@ -33,7 +33,7 @@ def main(args, device):
     project_name = "mdl_mutability_classifiers"
     if "WANDB_PROJECT" in os.environ:
         project_name = os.getenv("WANDB_PROJECT")
-    run_name = f"(predict-relations) {args.model_name}"
+    run_name = f"(predict-relations) {args.model_name} {args.clf_mutability}"
     if "WANDB_NAME" in os.environ:
         run_name = os.getenv("WANDB_NAME")
     wandb.init(project=project_name, name=run_name, config=args)
