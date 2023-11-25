@@ -82,7 +82,7 @@ def main(args, device):
 
     trainer = Trainer(
         model=model,
-        args=TrainingArguments(output_dir=os.path.dirname(model_path)),
+        args=TrainingArguments(output_dir=args.output_dir),
         tokenizer=tokenizer,
         data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
         compute_metrics=compute_metrics,
@@ -117,8 +117,14 @@ if __name__ == "__main__":
         help="",
     )
     parser.add_argument(
+        "--output_dir",
+        required=True,
+        type=str,
+        help="",
+    )
+    parser.add_argument(
         "--prompt_format",
-        required=None,
+        required=True,
         type=str,
         help="",
     )
