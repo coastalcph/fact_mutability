@@ -62,7 +62,7 @@ def get_truncated_ans(func, ground_truths, pred):
 
 def select_equal_count_mutability(ds, test_indices, mut_types, rng):
     test_ds = ds.select(indices=test_indices)
-    test_count_per_mut = min(collections.Counter(test_ds["type"]).values())
+    test_count_per_mut = min(min(collections.Counter(test_ds["type"]).values()), 164)
     final_test_indices = []
     for mut_type in mut_types:
         ds_mut_type = test_ds.filter(lambda ex: ex["type"] == mut_type)
