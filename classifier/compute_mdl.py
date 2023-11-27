@@ -63,8 +63,35 @@ def print_metrics(ds, dir_name):
     print("Final prob. acc:", get_acc(dir_name))
 
 
-ds = load_dataset("coastalcph/fm_classifier_mutable-1-*")
+clf_type = "1-n"
+wu = {"1-1": "0.2", "1-n": "0.1"}
+model = "llama2-7b"
+model_to_results_dir = {
+    "llama-7b": "/projects/nlp/data/constanzam/mdl_mutability",
+    "llama2-7b": f"/projects/nlp/data/constanzam/mdl_mutability/llama2-7b/fm_dataset_{clf_type}/",
+    "alpaca-7b": f"/projects/nlp/data/constanzam/mdl_mutability/alpaca-7b/fm_dataset_{clf_type}/",
+}
+model_to_normal_subfolder = {
+    "llama-7b": "no_overlap_fix_fm_dataset_1-1"
+    if clf_type == "1-1"
+    else "llama-7B/fm_dataset_1-n/lr5e-5_wu0.2_no_overlap_fix",
+    "llama2-7b": f"lr5e-5_wu{wu[clf_type]}_",
+    "alpaca-7b": f"lr5e-5_wu{wu[clf_type]}_",
+}
+model_to_rand_subfolder = {
+    "llama-7b": f"no_overlap_fix_rand_fm_dataset_{clf_type}"
+    if clf_type == "1-1"
+    else "llama-7B/fm_dataset_1-n/lr5e-5_wu0.2_rand",
+    "llama2-7b": f"lr5e-5_wu{wu[clf_type]}_rand",
+    "alpaca-7b": f"lr5e-5_wu{wu[clf_type]}_rand",
+}
+
+ds = load_dataset(f"coastalcph/mutability_classifier-{clf_type}")
 print("--- normal ----")
-print_metrics(ds, os.path.join(RESULTS_DIR, "normal_fm_dataset/"))
+print_metrics(
+    ds, os.path.join(model_to_results_dir[model], model_to_normal_subfolder[model])
+)
 print("--- random ----")
-print_metrics(ds, os.path.join(RESULTS_DIR, "random_fm_dataset/"))
+print_metrics(
+    ds, os.path.join(model_to_results_dir[model], model_to_rand_subfolder[model])
+)
