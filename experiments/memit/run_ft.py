@@ -24,7 +24,7 @@ from third_party.memit.baselines.ft import FTHyperParams as HyperParams
 from third_party.memit.baselines.ft import execute_ft
 from third_party.memit.util.globals import HPARAMS_DIR
 
-UPDATE_HPARAMS = ["lr", "weight_decay"]
+UPDATE_HPARAMS = ["lr", "weight_decay", "layers"]
 
 
 def main(args):
@@ -191,6 +191,13 @@ if __name__ == "__main__":
         help="",
     )
     parser.add_argument(
+        "--layers",
+        default=None,
+        type=int,
+        nargs="*",
+        help="",
+    )
+    parser.add_argument(
         "--weight_decay",
         default=None,
         type=float,
@@ -207,3 +214,4 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
     set_seed(args.seed)
     main(args)
+
