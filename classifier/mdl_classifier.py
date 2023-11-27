@@ -39,7 +39,7 @@ from transformers import (
 from inference import TEMPLATES, prepare_prompt
 
 logger = logging.getLogger(__name__)
-TEMPLATE_TO_USE = TEMPLATES["query_in_response"]
+TEMPLATE_TO_USE = "query_in_response"
 INSTRUCTION = "Complete the fact in as few words as possible"
 
 
