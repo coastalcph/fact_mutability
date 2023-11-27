@@ -48,6 +48,8 @@ def prepare_prompt(query, args):
             return "{}: {}".format(args.instruction, query)
         else:
             return query
+    elif "chat" in args.model_name_or_path:
+        return "[INST] {}: {} [/INST] ".format(args.instruction, query)
     else:
         return query
 
@@ -88,8 +90,13 @@ def get_scores(model_output, input_ids, prompt, query, tokenizer):
         trimmed_sequence = trimmed_sequence[:-1]
     answer = tokenizer.decode(trimmed_sequence)
     words = answer.split()
-    if not token_scores or not words or (
-        (len(token_scores) == 1 or len(words) == 1) and words[0] in ["the", "a", "an"]
+    if (
+        not token_scores
+        or not words
+        or (
+            (len(token_scores) == 1 or len(words) == 1)
+            and words[0] in ["the", "a", "an"]
+        )
     ):
         print(
             "Warning: Empty generation. input_ids={}, output_sequence={}".format(
@@ -168,7 +175,10 @@ def main(args):
 
     print("Loading model")
     use_fast = True
-    if "alpaca" in args.model_name_or_path or "llama" in args.model_name_or_path:
+    if (
+        "alpaca" in args.model_name_or_path
+        or "llama" in args.model_name_or_path.lower()
+    ):
         # the fact tokenizer causes issues with protobuf and tokenizers libraries
         use_fast = False
     tokenizer = AutoTokenizer.from_pretrained(
