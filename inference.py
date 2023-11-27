@@ -38,18 +38,18 @@ TEMPLATES = {
 }
 
 
-def prepare_prompt(query, args):
-    if "alpaca" in args.model_name_or_path:
-        instruction = args.instruction
-        template = TEMPLATES[args.template]
+def prepare_prompt(query, model_name_or_path, instruction, template=None):
+    if "alpaca" in model_name_or_path:
+        instruction = instruction
+        template = TEMPLATES[template]
         return template.format(instruction, query)
-    elif "flan" in args.model_name_or_path:
+    elif "flan" in model_name_or_path:
         if len(args.instruction):
-            return "{}: {}".format(args.instruction, query)
+            return "{}: {}".format(instruction, query)
         else:
             return query
-    elif "chat" in args.model_name_or_path:
-        return "[INST] {}: {} [/INST] ".format(args.instruction, query)
+    elif "chat" in model_name_or_path:
+        return "[INST] {}: {} [/INST] ".format(instruction, query)
     else:
         return query
 
@@ -128,7 +128,9 @@ def inference(dataset, tokenizer, model, args):
     for line in tqdm(dataset):
         qcode, query = line.split("\t")
         with torch.no_grad():
-            prompt = prepare_prompt(query, args)
+            prompt = prepare_prompt(
+                query, args.model_name_or_path, args.instruction, args.template
+            )
             input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
             model_output = model.generate(
                 input_ids, generation_config=config, output_scores=True
@@ -197,7 +199,6 @@ def main(args):
         model = AutoModelForSeq2SeqLM.from_pretrained(
             args.model_name_or_path, load_in_8bit=True, device_map="auto"
         )
-    print("model.hf_device_map", model.hf_device_map)
     model.eval()
 
     print("Loading dataset")
