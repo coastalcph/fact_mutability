@@ -256,7 +256,12 @@ def plot_last_subj_token(differences, low_score, avg_over_n, modelname, kind, sa
 
 
 def main(args):
-    data_id = "_".join(args.updates_dataset, args.split, args.mutability_type)
+    data_id = "_".join(
+        [
+            args.split,
+            "" if not args.mutability_type else args.mutability_type,
+        ]
+    )
     cache_output_dir = os.path.join(
         args.output_folder, args.model_name, data_id, "cache_hidden_flow"
     )
@@ -385,5 +390,15 @@ if __name__ == "__main__":
         help="",
     )
     args = parser.parse_args()
-    wandb.init(project="causal_analysis", name=args.model_name, config=args)
+    wandb.init(
+        project="causal_analysis",
+        name=" ".join(
+            [
+                args.model_name,
+                args.split,
+                "" if not args.mutability_type else args.mutability_type,
+            ]
+        ),
+        config=args,
+    )
     main(args)
