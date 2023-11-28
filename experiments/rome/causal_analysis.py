@@ -32,7 +32,7 @@ torch.set_grad_enabled(False)
 
 
 def load_model_and_tok(args):
-    model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path)
+    model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path).to("cuda")
     accelerator = Accelerator()
     model = accelerator.prepare(model)
     tokenizer = AutoTokenizer.from_pretrained(
