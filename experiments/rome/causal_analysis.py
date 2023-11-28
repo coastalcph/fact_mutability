@@ -378,6 +378,12 @@ if __name__ == "__main__":
         type=str,
         help="",
     )
+    parser.add_argument(
+        "--mutability_type",
+        default=None,
+        type=str,
+        help="",
+    )
     args = parser.parse_args()
     wandb.init(project="causal_analysis", name=args.model_name, config=args)
     main(args)
