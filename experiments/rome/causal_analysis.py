@@ -269,7 +269,7 @@ def main(args):
     ds = load_dataset(args.updates_dataset)
     ds = ds[args.split]
     if args.mutability_type is not None:
-        ds = ds.filter(lambda ex: ex["type"] == "mutability")
+        ds = ds.filter(lambda ex: ex["type"] == args.mutability_type)
     print("Computing causal analysis for", len(ds))
     noise_level = 3 * collect_embedding_std(
         mt,
