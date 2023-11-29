@@ -35,6 +35,7 @@ def main(args):
                         q, args.model_name_or_path, INSTRUCTION, TEMPLATE_TO_USE
                     ),
                     tokenizer=tokenizer,
+                    return_tensors="pt",
                 )
             )
         )
@@ -56,8 +57,10 @@ def main(args):
                 outputs = model(
                     input_ids=torch.tensor(ex["input_ids"]).to(device),
                     attention_mask=torch.tensor(ex["attention_mask"]).to(device),
+                    output_hidden_states=True,
                 )
-                X.append(outputs.logits[0, -1, :].cpu().numpy())
+                X.append(outputs.hidden_states[args.layer][0, -1, :].cpu().numpy())
+    print("Fitting LDA...")
     clf = LinearDiscriminantAnalysis()
     clf.fit(X, y)
     print("explained_variance_ratio_", clf.explained_variance_ratio_)
@@ -72,9 +75,10 @@ def main(args):
         df,
         x="1st. dim",
         y="2nd. dim",
-        color="mut_type",
-        symbol="relation",
-        title=f"LDA of classifier {args.split} data",
+        color="relation",
+        symbol="mut_type",
+        symbol_sequence=[0, "diamond-open", 304],
+        title=f"LDA of classifier {args.split} data (reprs@layer={args.layer})",
     )
     out_image_file = os.path.join(
         args.output_folder, f"{args.model_name}_{args.split}.pdf"
@@ -107,6 +111,12 @@ if __name__ == "__main__":
         "--split",
         default="train",
         type=str,
+        help="",
+    )
+    parser.add_argument(
+        "--layer",
+        default=-1,
+        type=int,
         help="",
     )
     args = parser.parse_args()

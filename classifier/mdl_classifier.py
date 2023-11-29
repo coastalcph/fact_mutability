@@ -91,11 +91,11 @@ class ModelArguments:
     )
 
 
-def replace_subject(example, prepare_prompt, tokenizer):
+def replace_subject(example, prepare_prompt, tokenizer, return_tensors=None):
     query = example["query"].replace("_X_ .", "_X_.")
     text = query.replace("_X_.", example["answer"][0]["name"]).strip()
     text = prepare_prompt(text).strip()
-    return {"text": text, **tokenizer(text)}
+    return {"text": text, **tokenizer(text, return_tensors=return_tensors)}
 
 
 def compute_metrics(eval_pred):
