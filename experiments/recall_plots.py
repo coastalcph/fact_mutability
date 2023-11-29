@@ -79,6 +79,7 @@ def save_macro_averages_plot(df, metric, model_name, output_folder):
 
 def main(args):
     output_folder = os.path.join(args.output_folder, args.model_name, args.split)
+    os.makedirs(output_folder, exist_ok=True)
     wandb.config["output_folder"] = output_folder
 
     dataset_name = "coastalcph/mutability_classifier-1-{}"
