@@ -158,8 +158,8 @@ def main(args):
         suffixes=["_mean", "_std"],
     ).sort_values(by=["layer"])
 
-    metric = "rank"
-    save_macro_averages_plot(df, metric, args.model_name, output_folder)
+    for metric in ["rank", "prob"]:
+        save_macro_averages_plot(df, metric, args.model_name, output_folder)
 
 
 if __name__ == "__main__":
