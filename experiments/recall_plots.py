@@ -77,10 +77,8 @@ def save_macro_averages_plot(df, metric, model_name, output_folder):
     plt.close()
 
 
-def fetch_model_recall_data(args):
+def get_classifier_data(args, tokenizer):
     dataset_name = "coastalcph/mutability_classifier-1-{}"
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
-    tokenizer.pad_token = tokenizer.eos_token
     tokenized_datasets = []
     for ds_name in [dataset_name.format(i) for i in ["1", "n"]]:
         ds = load_dataset(ds_name)
@@ -97,6 +95,44 @@ def fetch_model_recall_data(args):
             )
         )
     print("Example:", tokenized_datasets[0][args.split][0])
+    return tokenized_datasets
+
+
+def get_updates_data(args, tokenizer):
+    ds = load_dataset(f"coastalcph/fm-updates-{args.model_name}")
+    tokenized_ds = ds.map(
+        partial(
+            remove_subj_tokenize,
+            prepare_prompt=lambda q: prepare_prompt(
+                q, args.model_name_or_path, INSTRUCTION, TEMPLATE_TO_USE
+            ),
+            tokenizer=tokenizer,
+            return_tensors="pt",
+        )
+    )
+    print("Example:", tokenized_ds[args.split][0])
+    return [tokenized_ds]
+
+
+def get_ex_id(ex):
+    if "id" in ex:
+        return ex["id"]
+    return "_".join(
+        [
+            ex["relation"],
+            ex["query"]["qid"],
+            ex["prediction"]["query"].replace(ex["query"]["label"], "[X]"),
+        ]
+    )
+
+
+def fetch_model_recall_data(args):
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
+    tokenizer.pad_token = tokenizer.eos_token
+    if args.use_data_from == "classifier":
+        tokenized_datasets = get_classifier_data(args, tokenizer)
+    elif args.use_data_from == "updates":
+        tokenized_datasets = get_updates_data(args, tokenizer)
     model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path).to(device)
 
     relations = []
@@ -105,17 +141,19 @@ def fetch_model_recall_data(args):
     ranks = []
     probs = []
     embed_matrix = model.lm_head.weight
-    with torch.no_grad():
-        for tokenized_ds in tokenized_datasets:
-            for ex in tqdm(tokenized_ds[args.split]):
+    for tokenized_ds in tokenized_datasets:
+        splits = [args.split] if args.split else tokenized_ds.keys()
+        for split in splits:
+            for ex in tqdm(tokenized_ds[split]):
                 relations.append(ex["relation"])
                 mut_types.append(ex["type"])
-                ex_id.append(ex["id"])
-                outputs = model(
-                    input_ids=torch.tensor(ex["input_ids"]).to(device),
-                    attention_mask=torch.tensor(ex["attention_mask"]).to(device),
-                    output_hidden_states=True,
-                )
+                ex_id.append(get_ex_id(ex))
+                with torch.no_grad():
+                    outputs = model(
+                        input_ids=torch.tensor(ex["input_ids"]).to(device),
+                        attention_mask=torch.tensor(ex["attention_mask"]).to(device),
+                        output_hidden_states=True,
+                    )
                 pred_token_id = torch.argmax(outputs.logits[0, -1], dim=-1).item()
                 probs.append([])
                 ranks.append([])
@@ -137,7 +175,9 @@ def fetch_model_recall_data(args):
 
 
 def main(args):
-    output_folder = os.path.join(args.output_folder, args.model_name, args.split)
+    output_folder = os.path.join(
+        args.output_folder, args.model_name, "_".join(args.use_data_from, args.split)
+    )
     os.makedirs(output_folder, exist_ok=True)
     wandb.config["final_output_folder"] = output_folder
     df_filename = os.path.join(output_folder, "logits_per_layer.json")
@@ -183,8 +223,14 @@ if __name__ == "__main__":
         help="",
     )
     parser.add_argument(
+        "--use_data_from",
+        default="classifier",
+        type=str,
+        help="",
+    )
+    parser.add_argument(
         "--split",
-        default="train",
+        default="",
         type=str,
         help="",
     )
@@ -195,6 +241,7 @@ if __name__ == "__main__":
         name=" ".join(
             [
                 args.model_name,
+                args.use_data_from,
                 args.split,
             ]
         ),
