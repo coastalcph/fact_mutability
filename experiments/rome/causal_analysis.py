@@ -328,6 +328,7 @@ def main(args):
     print(
         f"Biggest effect on {kind} on average in layer {np.argmax(scores_last_subj_token)}"
     )
+    wandb.summary["avg_best_layer"] = np.argmax(scores_last_subj_token)
 
 
 if __name__ == "__main__":
