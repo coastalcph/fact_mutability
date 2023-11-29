@@ -74,6 +74,7 @@ def get_hidden_states_repr(args):
 
 def main(args):
     output_folder = os.path.join(args.output_folder, args.model_name, args.split)
+    os.makedirs(output_folder, exist_ok=True)
     wandb.config["final_output_folder"] = output_folder
     cache_filename = os.path.join(output_folder, "hidden_states_per_layer.npz")
     if os.path.exists(cache_filename):
