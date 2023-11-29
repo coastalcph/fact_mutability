@@ -22,7 +22,10 @@ def get_rank(probs, index):
 
 
 def remove_subj_tokenize(example, prepare_prompt, tokenizer, return_tensors=None):
-    query = example["query"].replace("_X_ .", "_X_.")
+    if isinstance(example["query"], str):
+        query = example["query"].replace("_X_ .", "_X_.")
+    else:
+        query = example["prediction"]["query"]
     text = query.replace("_X_.", "").strip()
     text = prepare_prompt(text).strip()
     return {"text": text, **tokenizer(text, return_tensors=return_tensors)}
