@@ -114,13 +114,7 @@ def main(args):
             for ex in tqdm(tokenized_ds[args.split]):
                 relations.append(ex["relation"])
                 mut_types.append(ex["type"])
-                ex_id.append(
-                    "_".join(
-                        ex["query"]["qid"],
-                        ex["relation"],
-                        ex["prediction"]["query"].replace(ex["query"]["label"], "[X]"),
-                    )
-                )
+                ex_id.append(ex["id"])
                 outputs = model(
                     input_ids=torch.tensor(ex["input_ids"]).to(device),
                     attention_mask=torch.tensor(ex["attention_mask"]).to(device),
