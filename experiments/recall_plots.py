@@ -97,7 +97,7 @@ def get_classifier_data(args, tokenizer):
                 )
             )
         )
-    split = args.split if args.split else list(tokenized_datasets[0].keys()[0])
+    split = args.split if args.split else list(tokenized_datasets[0].keys())[0]
     print("Example:", tokenized_datasets[0][split][0])
     return tokenized_datasets
 
@@ -114,7 +114,7 @@ def get_updates_data(args, tokenizer):
             return_tensors="pt",
         )
     )
-    split = args.split if args.split else list(tokenized_ds.keys()[0])
+    split = args.split if args.split else list(tokenized_ds.keys())[0]
     print("Example:", tokenized_ds[split][0])
     return [tokenized_ds]
 
