@@ -176,7 +176,7 @@ def fetch_model_recall_data(args):
 
 def main(args):
     output_folder = os.path.join(
-        args.output_folder, args.model_name, "_".join(args.use_data_from, args.split)
+        args.output_folder, args.model_name, "_".join([args.use_data_from, args.split])
     )
     os.makedirs(output_folder, exist_ok=True)
     wandb.config["final_output_folder"] = output_folder
