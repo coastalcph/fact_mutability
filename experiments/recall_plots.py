@@ -77,11 +77,7 @@ def save_macro_averages_plot(df, metric, model_name, output_folder):
     plt.close()
 
 
-def main(args):
-    output_folder = os.path.join(args.output_folder, args.model_name, args.split)
-    os.makedirs(output_folder, exist_ok=True)
-    wandb.config["final_output_folder"] = output_folder
-
+def fetch_model_recall_data(args):
     dataset_name = "coastalcph/mutability_classifier-1-{}"
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
     tokenizer.pad_token = tokenizer.eos_token
@@ -128,7 +124,7 @@ def main(args):
                     logits_i = embed_matrix @ hidden_states[0, -1]
                     ranks[-1].append(get_rank(logits_i, pred_token_id))
                     probs[-1].append(torch.softmax(logits_i, -1)[pred_token_id].item())
-    df = pd.DataFrame(
+    return pd.DataFrame(
         [
             (id_, rel, mut, prob[i], rank[i], i)
             for id_, rel, mut, prob, rank in zip(
@@ -138,7 +134,20 @@ def main(args):
         ],
         columns=["ex_id", "relation", "mut_type", "prob", "rank", "layer"],
     )
-    df.to_json(os.path.join(output_folder, "logits_per_layer.json"))
+
+
+def main(args):
+    output_folder = os.path.join(args.output_folder, args.model_name, args.split)
+    os.makedirs(output_folder, exist_ok=True)
+    wandb.config["final_output_folder"] = output_folder
+    df_filename = os.path.join(output_folder, "logits_per_layer.json")
+    if os.path.exists(df_filename):
+        print("Reading cached values from", df_filename)
+        df = pd.read_json(df_filename)
+    else:
+        df = fetch_model_recall_data(args)
+        df.to_json(df_filename)
+
     df = df.drop(["ex_id"], axis=1)
     # Averages per relation.
     means = df.groupby(by=["relation", "mut_type", "layer"], as_index=False).mean()
@@ -146,8 +155,8 @@ def main(args):
     df = means.merge(
         stds,
         on=["relation", "mut_type", "layer"],
-        suffixes=["_mean", "_std"].sort_values(by=["layer"]),
-    )
+        suffixes=["_mean", "_std"],
+    ).sort_values(by=["layer"])
 
     metric = "rank"
     save_macro_averages_plot(df, metric, args.model_name, output_folder)
