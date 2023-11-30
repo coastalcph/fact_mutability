@@ -103,7 +103,7 @@ def main(args):
         )
         if os.path.exists(cache_filename):
             print("Loading cached X_transformed from", cache_filename)
-            numpy_result = dict(np.load(cache_filename, allow_pickle=True))["arr_0"]
+            X_transformed = dict(np.load(cache_filename, allow_pickle=True))["arr_0"]
         else:
             print("Fitting LDA...", layer)
             clf = LinearDiscriminantAnalysis()
