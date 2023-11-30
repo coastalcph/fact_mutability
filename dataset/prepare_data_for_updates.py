@@ -60,9 +60,11 @@ def get_truncated_ans(func, ground_truths, pred):
     return pred[:index_found]
 
 
-def select_equal_count_mutability(ds, test_indices, mut_types, rng):
+def select_equal_count_mutability(ds, test_indices, mut_types, rng, max_size_per_mut):
     test_ds = ds.select(indices=test_indices)
-    test_count_per_mut = min(min(collections.Counter(test_ds["type"]).values()), 164)
+    test_count_per_mut = min(
+        min(collections.Counter(test_ds["type"]).values()), max_size_per_mut
+    )
     final_test_indices = []
     for mut_type in mut_types:
         ds_mut_type = test_ds.filter(lambda ex: ex["type"] == mut_type)
@@ -117,13 +119,10 @@ def split_validation_test(ds, mut_type_counts, rng):
     return validation_indices
 
 
-def get_dataset_dict(test_ds, val_ds):
-    ds_splitted = DatasetDict(
-        {
-            "test": test_ds,
-            "validation": val_ds,
-        }
-    )
+def get_dataset_dict(test_ds, val_ds=None):
+    ds_splitted = DatasetDict({"test": test_ds})
+    if val_ds is not None:
+        ds_splitted["validation"] = val_ds
     print(ds_splitted)
     for split in ds_splitted.keys():
         print(split)
@@ -227,23 +226,38 @@ def main(args):
             )
             ds_data.append(ex)
     ds = Dataset.from_list(ds_data)
-    print(ds)
-    print(collections.Counter([f"{r}-{t}" for r, t in zip(ds["relation"], ds["type"])]))
+    get_dataset_dict(ds)
     mut_type_counts = collections.Counter(ds["type"])
-    print(mut_type_counts)
-    print("----------------------")
-    print("Splitting val-test...")
-    validation_indices = split_validation_test(ds, mut_type_counts, rng)
-    test_indices = list(set(list(range(len(ds)))).difference(validation_indices))
-    val_ds = ds.select(indices=validation_indices)
-    test_ds = ds.select(indices=test_indices)
-    ds_splitted = get_dataset_dict(test_ds, val_ds)
-    print("----------------------")
-    print("Selecting equal number of examples in test across mutability types...")
-    final_test_indices = select_equal_count_mutability(
-        ds, test_indices, mut_type_counts.keys(), rng
-    )
-    test_ds = test_ds.select(indices=final_test_indices)
+    if args.only_test_split:
+        print("----------------------")
+        print("Selecting equal number of examples in test across mutability types...")
+        val_ds = None
+        indices = select_equal_count_mutability(
+            ds,
+            range(len(ds)),
+            mut_type_counts.keys(),
+            rng,
+            args.max_test_size_per_mutability,
+        )
+        test_ds = ds.select(indices=indices)
+    else:
+        print("----------------------")
+        print("Splitting val-test...")
+        validation_indices = split_validation_test(ds, mut_type_counts, rng)
+        test_indices = list(set(range(len(ds))).difference(validation_indices))
+        val_ds = ds.select(indices=validation_indices)
+        test_ds = ds.select(indices=test_indices)
+        ds_splitted = get_dataset_dict(test_ds, val_ds)
+        print("----------------------")
+        print("Selecting equal number of examples in test across mutability types...")
+        final_test_indices = select_equal_count_mutability(
+            ds,
+            test_indices,
+            mut_type_counts.keys(),
+            rng,
+            args.max_test_size_per_mutability,
+        )
+        test_ds = test_ds.select(indices=final_test_indices)
     ds_splitted = get_dataset_dict(test_ds, val_ds)
 
     if args.hf_dataset_name is not None:
@@ -279,6 +293,8 @@ if __name__ == "__main__":
         type=str,
         help="",
     )
+    parser.add_argument("--only_test_split", action="store_true")
+    parser.add_argument("--max_test_size_per_mutability", default=164)
     parser.add_argument("--check_validation_unchanged", action="store_true")
     parser.add_argument(
         "--no_check_validation_unchanged",
