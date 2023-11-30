@@ -177,10 +177,7 @@ if __name__ == "__main__":
     wandb.init(
         project="lda_mutability",
         name=" ".join(
-            [
-                args.model_name,
-                args.split,
-            ]
+            [args.model_name, args.split, "rand" if args.random_labels else ""]
         ),
         config=args,
     )
