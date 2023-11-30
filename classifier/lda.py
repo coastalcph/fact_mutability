@@ -19,7 +19,29 @@ from classifier.mdl_classifier import INSTRUCTION, TEMPLATE_TO_USE, replace_subj
 from inference import prepare_prompt
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-SEED = 42
+
+
+def randomize_labels_per_relation(y, relations, seed):
+    rng = np.random.default_rng(seed)
+    old_labels = {r: label for r, label in zip(relations, y)}
+    # Sorted so we assign the same labels across different runs.
+    relations = sorted(relations)
+    new_labels = {
+        relations[i]: label
+        for i, label in enumerate(rng.integers(0, 3, len(relations)))
+    }
+    print("New labels:", new_labels)
+    print(collections.Counter(new_labels.values()))
+    changed_labels = sum(
+        [int(new_labels[r] != old_label) for r, old_label in old_labels.items()]
+    )
+    print("changed labels:", changed_labels)
+    for r in old_labels:
+        if old_labels[r] != new_labels[r]:
+            print(f"{r} changed {old_labels[r]}->{new_labels[r]}")
+        else:
+            print(f"{r} {new_labels[r]}")
+    return [new_labels[r] for r, _ in zip(relations, y)]
 
 
 def get_hidden_states_repr(args):
@@ -94,8 +116,8 @@ def main(args):
             **{**X, "y": y, "relations": relations, "mut_types": mut_types},
         )
     if args.random_labels:
-        rng = np.random.default_rng(SEED)
-        y = rng.integers(low=0, high=3, size=len(y))
+        y = randomize_labels_per_relation(y, relations, args.random_labels_seed)
+        args.random_labels = args.random_labels_seed
         assert len(set(y)) == 3
 
     layers = [f"layer={args.layer}"] if args.layer is not None else X.keys()
@@ -172,6 +194,7 @@ if __name__ == "__main__":
         help="",
     )
     parser.add_argument("--random_labels", action="store_true")
+    parser.add_argument("--random_labels_seed", default=7)
     args = parser.parse_args()
 
     wandb.init(
