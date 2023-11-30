@@ -100,7 +100,9 @@ def main(args):
     for layer in X.keys():
         if len(X[layer]) == 0:
             continue
-        cache_filename = os.path.join(output_folder, f"X_transformed_{layer}.npz")
+        cache_filename = os.path.join(
+            output_folder, f"X_transformed_{layer}_rand={args.random_labels}.npz"
+        )
         if os.path.exists(cache_filename):
             print("Loading cached X_transformed from", cache_filename)
             numpy_result = dict(np.load(cache_filename, allow_pickle=True))[
@@ -129,7 +131,9 @@ def main(args):
             symbol_sequence=[0, "diamond-open", 304],
             title=f"LDA of classifier {args.split} data (reprs@{layer})",
         )
-        out_image_file = os.path.join(output_folder, f"lda_layer{layer}.pdf")
+        out_image_file = os.path.join(
+            output_folder, f"lda_layer{layer}_rand={args.random_labels}.pdf"
+        )
         fig.write_image(out_image_file)
 
 
