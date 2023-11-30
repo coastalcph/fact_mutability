@@ -95,7 +95,8 @@ def main(args):
         )
     if args.random_labels:
         rng = np.random.default_rng(SEED)
-        y = rng.integers(low=0, high=2, size=len(y))
+        y = rng.integers(low=0, high=3, size=len(y))
+        assert len(set(y)) == 3
 
     for layer in X.keys():
         cache_filename = os.path.join(
