@@ -93,6 +93,8 @@ def main(args):
             **{"X": X, "y": y, "relations": relations, "mut_types": mut_types},
         )
     for layer in range(len(X)):
+        if not X[layer]:
+            continue
         cache_filename = os.path.join(output_folder, f"X_transformed_{layer}.npz")
         if os.path.exists(cache_filename):
             print("Loading cached X_transformed from", cache_filename)
@@ -102,7 +104,7 @@ def main(args):
         else:
             print("Fitting LDA...", layer)
             clf = LinearDiscriminantAnalysis()
-            clf.fit(X, y)
+            clf.fit(X[layer], y)
             print("explained_variance_ratio_", clf.explained_variance_ratio_)
             wandb.run.summary[
                 f"explained_variance_ratio_{layer}"
