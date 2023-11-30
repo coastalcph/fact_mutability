@@ -44,7 +44,7 @@ def get_hidden_states_repr(args):
     model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path).to(device)
 
     y = []
-    X = None
+    X = collections.defaultdict(list)
     relations = []
     mut_types = []
     type_to_label = {
@@ -66,10 +66,10 @@ def get_hidden_states_repr(args):
                 if args.layer is not None
                 else range(len(outputs.hidden_states))
             )
-            if X is None:
-                X = [[] for _ in layers]
             for layer in layers:
-                X[layer].append(outputs.hidden_states[layer][0, -1, :].cpu().numpy())
+                X[f"layer={layer}"].append(
+                    outputs.hidden_states[layer][0, -1, :].cpu().numpy()
+                )
     return X, y, relations, mut_types
 
 
@@ -82,7 +82,7 @@ def main(args):
         print("Loading data from cache file", cache_filename)
         numpy_result = dict(np.load(cache_filename, allow_pickle=True))
         X, y, relations, mut_types = (
-            numpy_result["X"],
+            {k: numpy_result[k] for k in numpy_result.keys() if k.startswith("layer=")},
             numpy_result["y"],
             numpy_result["relations"],
             numpy_result["mut_types"],
@@ -91,13 +91,13 @@ def main(args):
         X, y, relations, mut_types = get_hidden_states_repr(args)
         np.savez(
             cache_filename,
-            **{"X": X, "y": y, "relations": relations, "mut_types": mut_types},
+            **{**X, "y": y, "relations": relations, "mut_types": mut_types},
         )
     if args.random_labels:
         rng = np.random.default_rng(SEED)
         y = rng.randint(low=0, high=2, size=len(y))
 
-    for layer in range(len(X)):
+    for layer in X.keys():
         if len(X[layer]) == 0:
             continue
         cache_filename = os.path.join(output_folder, f"X_transformed_{layer}.npz")
@@ -114,7 +114,7 @@ def main(args):
             wandb.run.summary[
                 f"explained_variance_ratio_{layer}"
             ] = clf.explained_variance_ratio_
-            X_transformed = clf.transform(X)
+            X_transformed = clf.transform(X[layer])
 
         df = pd.DataFrame(
             zip(X_transformed[:, 0], X_transformed[:, 1], mut_types, relations),
@@ -127,7 +127,7 @@ def main(args):
             color="relation",
             symbol="mut_type",
             symbol_sequence=[0, "diamond-open", 304],
-            title=f"LDA of classifier {args.split} data (reprs@layer={layer})",
+            title=f"LDA of classifier {args.split} data (reprs@{layer})",
         )
         out_image_file = os.path.join(output_folder, f"lda_layer{layer}.pdf")
         fig.write_image(out_image_file)
