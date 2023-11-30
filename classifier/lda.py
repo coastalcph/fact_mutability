@@ -98,8 +98,6 @@ def main(args):
         y = rng.randint(low=0, high=2, size=len(y))
 
     for layer in X.keys():
-        if len(X[layer]) == 0:
-            continue
         cache_filename = os.path.join(
             output_folder, f"X_transformed_{layer}_rand={args.random_labels}.npz"
         )
@@ -117,6 +115,10 @@ def main(args):
                 f"explained_variance_ratio_{layer}"
             ] = clf.explained_variance_ratio_
             X_transformed = clf.transform(X[layer])
+            np.savez(
+                cache_filename,
+                X_transformed,
+            )
 
         df = pd.DataFrame(
             zip(X_transformed[:, 0], X_transformed[:, 1], mut_types, relations),
