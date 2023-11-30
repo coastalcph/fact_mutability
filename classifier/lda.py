@@ -165,7 +165,7 @@ if __name__ == "__main__":
         type=int,
         help="",
     )
-    parser.add_argument("--random_labels", action="store_true", type=bool)
+    parser.add_argument("--random_labels", action="store_true")
     args = parser.parse_args()
 
     wandb.init(
