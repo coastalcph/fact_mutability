@@ -19,6 +19,7 @@ from classifier.mdl_classifier import INSTRUCTION, TEMPLATE_TO_USE, replace_subj
 from inference import prepare_prompt
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+SEED = 42
 
 
 def get_hidden_states_repr(args):
@@ -92,8 +93,12 @@ def main(args):
             cache_filename,
             **{"X": X, "y": y, "relations": relations, "mut_types": mut_types},
         )
+    if args.random_labels:
+        rng = np.random.default_rng(SEED)
+        y = rng.randint(low=0, high=2, size=len(y))
+
     for layer in range(len(X)):
-        if not X[layer]:
+        if len(X[layer]) == 0:
             continue
         cache_filename = os.path.join(output_folder, f"X_transformed_{layer}.npz")
         if os.path.exists(cache_filename):
@@ -160,6 +165,7 @@ if __name__ == "__main__":
         type=int,
         help="",
     )
+    parser.add_argument("--random_labels", action="store_true", type=bool)
     args = parser.parse_args()
 
     wandb.init(
