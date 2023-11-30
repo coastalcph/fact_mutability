@@ -248,8 +248,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--only_relations",
-        nargs="*",
-        type=list,
+        nargs="+",
+        default=[],
         help="",
     )
     args = parser.parse_args()
