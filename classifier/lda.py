@@ -98,7 +98,8 @@ def main(args):
         y = rng.integers(low=0, high=3, size=len(y))
         assert len(set(y)) == 3
 
-    for layer in X.keys():
+    layers = [f"layer={args.layer}"] if args.layer is not None else X.keys()
+    for layer in layers:
         cache_filename = os.path.join(
             output_folder, f"X_transformed_{layer}_rand={args.random_labels}.npz"
         )
