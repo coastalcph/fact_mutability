@@ -149,7 +149,12 @@ def fetch_model_recall_data(args):
     for tokenized_ds in tokenized_datasets:
         splits = [args.split] if args.split else tokenized_ds.keys()
         for split in splits:
-            for ex in tqdm(tokenized_ds[split]):
+            ds = tokenized_ds[split]
+            if args.only_relations:
+                ds = tokenized_ds[split].filter(
+                    lambda ex: ex["relation"] in set(args.only_relations)
+                )
+            for ex in tqdm(ds):
                 relations.append(ex["relation"])
                 mut_types.append(ex["type"])
                 ex_id.append(get_ex_id(ex))
@@ -237,6 +242,12 @@ if __name__ == "__main__":
         "--split",
         default="",
         type=str,
+        help="",
+    )
+    parser.add_argument(
+        "--only_relations",
+        nargs="*",
+        type=list,
         help="",
     )
     args = parser.parse_args()
