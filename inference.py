@@ -13,6 +13,7 @@ from transformers import (
     GenerationConfig,
     LlamaTokenizer,
     T5TokenizerFast,
+    PreTrainedTokenizerFast,
 )
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -48,6 +49,8 @@ def prepare_prompt(query, model_name_or_path, instruction, template=None):
             return "{}: {}".format(instruction, query)
         else:
             return query
+    elif "falcon" in model_name_or_path:
+        return "{}\n{}".format(instruction, query)
     elif "chat" in model_name_or_path:
         return "[INST] {}: {} [/INST] ".format(instruction, query)
     else:
@@ -57,6 +60,9 @@ def prepare_prompt(query, model_name_or_path, instruction, template=None):
 get_sequence = {
     # Ignore the prompt.
     LlamaTokenizer: lambda seq, input_ids: seq[input_ids.shape[1] :].cpu().tolist(),
+    PreTrainedTokenizerFast: lambda seq, input_ids: seq[input_ids.shape[1] :]
+    .cpu()
+    .tolist(),
     # Ignore the BOS token.
     T5TokenizerFast: lambda seq, _: seq.cpu().tolist()[1:],
 }
@@ -65,13 +71,12 @@ ids_to_ignore = {
     LlamaTokenizer: [1, 2],
     # Ignore EOS.
     T5TokenizerFast: [1],
+    # Ignore EOS.
+    PreTrainedTokenizerFast: [11],
 }
 # Token id of a full stop when not at the beggining of a word so it could be
 # different than tokenizer.tokens_to_ids(tokenizer.tokenize('.')).
-full_stop = {
-    LlamaTokenizer: 29889,
-    T5TokenizerFast: 5,
-}
+full_stop = {LlamaTokenizer: 29889, T5TokenizerFast: 5, PreTrainedTokenizerFast: 25}
 
 
 def get_scores(model_output, input_ids, prompt, query, tokenizer):
@@ -88,7 +93,7 @@ def get_scores(model_output, input_ids, prompt, query, tokenizer):
     if trimmed_sequence and trimmed_sequence[-1] == full_stop[type(tokenizer)]:
         token_scores = token_scores[:-1]
         trimmed_sequence = trimmed_sequence[:-1]
-    answer = tokenizer.decode(trimmed_sequence)
+    answer = tokenizer.decode(trimmed_sequence).strip()
     words = answer.split()
     if (
         not token_scores
