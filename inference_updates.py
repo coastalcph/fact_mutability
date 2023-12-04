@@ -129,6 +129,9 @@ def main(args):
         args.model_name_or_path, use_fast=use_fast
     )
 
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
     config = GenerationConfig(
         max_new_tokens=50,
         num_beams=NUM_BEAMS,
@@ -137,6 +140,7 @@ def main(args):
         output_scores=False,
         num_return_sequences=NUM_BEAMS,
         return_dict_in_generate=True,
+        pad_token_id=tokenizer.pad_token_id,
     )
 
     ds = load_dataset(f"coastalcph/fm-updates-{args.model_name}")["test"]
@@ -263,4 +267,3 @@ if __name__ == "__main__":
     )
 
     main(args)
-
