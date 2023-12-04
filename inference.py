@@ -49,7 +49,7 @@ def prepare_prompt(query, model_name_or_path, instruction, template=None):
             return "{}: {}".format(instruction, query)
         else:
             return query
-    elif "falcon" in model_name_or_path:
+    elif "instruct" in model_name_or_path:
         return "{}\n{}".format(instruction, query)
     elif "chat" in model_name_or_path:
         return "[INST] {}: {} [/INST] ".format(instruction, query)
