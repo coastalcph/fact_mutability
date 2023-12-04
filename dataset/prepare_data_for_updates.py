@@ -294,7 +294,7 @@ if __name__ == "__main__":
         help="",
     )
     parser.add_argument("--only_test_split", action="store_true")
-    parser.add_argument("--max_test_size_per_mutability", default=164)
+    parser.add_argument("--max_test_size_per_mutability", type=int, default=164)
     parser.add_argument("--check_validation_unchanged", action="store_true")
     parser.add_argument(
         "--no_check_validation_unchanged",
