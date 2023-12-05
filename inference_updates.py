@@ -14,26 +14,6 @@ from inference import prepare_prompt, get_scores, get_generation_config
 from datasets import load_dataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-NUM_BEAMS = 1
-MAX_ANSWER_LENGTH = 10
-
-TEMPLATES = {
-    "query_in_instructions": (
-        "Below is an instruction that describes a task. "
-        "Write a response that appropriately completes the request.\n\n"
-        "### Instruction:\n{}: {}\n\n### Response:"
-    ),
-    "query_in_response": (
-        "Below is an instruction that describes a task. "
-        "Write a response that appropriately completes the request.\n\n"
-        "### Instruction:\n{}\n\n### Response: {}"
-    ),
-    "query_in_input": (
-        "Below is an instruction that describes a task. "
-        "Write a response that appropriately completes the request.\n\n"
-        "### Instruction:\n{}\n\n### Input:\n{}\n\n### Response:"
-    ),
-}
 
 
 def main(args):

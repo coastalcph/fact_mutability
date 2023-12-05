@@ -121,7 +121,7 @@ def get_generation_config(tokenizer):
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    config = GenerationConfig(
+    return GenerationConfig(
         max_new_tokens=50,
         num_beams=NUM_BEAMS,
         do_sample=False,
