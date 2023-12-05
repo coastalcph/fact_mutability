@@ -117,7 +117,7 @@ def get_scores(model_output, input_ids, prompt, query, tokenizer):
     return answer, token_scores, first_token_score, perplexity
 
 
-def inference(dataset, tokenizer, model, args):
+def get_generation_config(tokenizer):
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -132,6 +132,9 @@ def inference(dataset, tokenizer, model, args):
         pad_token_id=tokenizer.pad_token_id,
     )
 
+
+def inference(dataset, tokenizer, model, args):
+    config = get_generation_config(tokenizer)
     predictions = []
     outputs = {key: [] for key in ["raw_predictions", "predictions"]}
     for line in tqdm(dataset):

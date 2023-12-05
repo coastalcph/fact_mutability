@@ -2,19 +2,15 @@ import argparse
 import json
 import os
 
-import numpy as np
 import torch
 import wandb
 from tqdm import tqdm
 from transformers import (
     AutoModelForCausalLM,
-    AutoModelForSeq2SeqLM,
     AutoTokenizer,
-    GenerationConfig,
-    LlamaTokenizer,
-    T5TokenizerFast,
 )
 import collections
+from inference import prepare_prompt, get_scores, get_generation_config
 from datasets import load_dataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -40,80 +36,6 @@ TEMPLATES = {
 }
 
 
-def prepare_prompt(query, model_name_or_path, instruction, template=None):
-    if "alpaca" in model_name_or_path:
-        instruction = instruction
-        template = TEMPLATES[template]
-        return template.format(instruction, query)
-    elif "flan" in model_name_or_path:
-        if len(args.instruction):
-            return "{}: {}".format(instruction, query)
-        else:
-            return query
-    elif "chat" in model_name_or_path:
-        return "[INST] {}: {} [/INST] ".format(instruction, query)
-    else:
-        return query
-
-
-get_sequence = {
-    # Ignore the prompt.
-    LlamaTokenizer: lambda seq, input_ids: seq[input_ids.shape[1] :].cpu().tolist(),
-    # Ignore the BOS token.
-    T5TokenizerFast: lambda seq, _: seq.cpu().tolist()[1:],
-}
-ids_to_ignore = {
-    # Ignore BOS, EOS.
-    LlamaTokenizer: [1, 2],
-    # Ignore EOS.
-    T5TokenizerFast: [1],
-}
-# Token id of a full stop when not at the beggining of a word so it could be
-# different than tokenizer.tokens_to_ids(tokenizer.tokenize('.')).
-full_stop = {
-    LlamaTokenizer: 29889,
-    T5TokenizerFast: 5,
-}
-
-
-def get_scores(model_output, input_ids, prompt, query, tokenizer):
-    """Assumes num_beam=1. Gets the token scores for every token that is not BOS, EOS or fullstop,
-    gets the first non-the token score and computes pplx."""
-    sequence = get_sequence[type(tokenizer)](model_output["sequences"][0], input_ids)
-    assert len(sequence) == len(model_output["scores"])
-    token_scores = []
-    trimmed_sequence = []
-    for idx, score in zip(sequence, model_output["scores"]):
-        if idx not in ids_to_ignore[type(tokenizer)]:
-            token_scores.append(torch.softmax(score, 1)[:, idx].cpu().item())
-            trimmed_sequence.append(idx)
-    if trimmed_sequence and trimmed_sequence[-1] == full_stop[type(tokenizer)]:
-        token_scores = token_scores[:-1]
-        trimmed_sequence = trimmed_sequence[:-1]
-    answer = tokenizer.decode(trimmed_sequence)
-    words = answer.split()
-    if (
-        not token_scores
-        or not words
-        or (
-            (len(token_scores) == 1 or len(words) == 1)
-            and words[0] in ["the", "a", "an"]
-        )
-    ):
-        print(
-            "Warning: Empty generation. input_ids={}, output_sequence={}".format(
-                input_ids, sequence
-            )
-        )
-        return "", [], 0, float("inf")
-    first_token_score = (
-        token_scores[1] if words[0] in ["the", "a", "an"] else token_scores[0]
-    )
-    perplexity = np.exp(-np.mean(np.log(token_scores)))
-
-    return answer, token_scores, first_token_score, perplexity
-
-
 def main(args):
     experiment_dir = os.path.join(args.output_dir, args.model_name)
     os.makedirs(experiment_dir, exist_ok=True)
@@ -129,19 +51,7 @@ def main(args):
         args.model_name_or_path, use_fast=use_fast
     )
 
-    if tokenizer.pad_token_id is None:
-        tokenizer.pad_token = tokenizer.eos_token
-
-    config = GenerationConfig(
-        max_new_tokens=50,
-        num_beams=NUM_BEAMS,
-        do_sample=False,
-        output_hidden_states=False,
-        output_scores=False,
-        num_return_sequences=NUM_BEAMS,
-        return_dict_in_generate=True,
-        pad_token_id=tokenizer.pad_token_id,
-    )
+    config = get_generation_config(tokenizer)
 
     ds = load_dataset(f"coastalcph/fm-updates-{args.model_name}")["test"]
     templates_ds = load_dataset("coastalcph/fm_templates")["train"]
