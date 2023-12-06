@@ -100,15 +100,15 @@ def main(args):
             }
         )
         if answer.startswith(new_target):
-            updated_counts_mutability[f"{ex['type']}_succ"] += 1
-        updated_counts_mutability[f"{ex['type']}_total"] += 1
+            updated_counts_mutability[f"{ex['type']}/succ"] += 1
+        updated_counts_mutability[f"{ex['type']}/total"] += 1
         if ex_i % 100 == 0:
             print(updated_counts_mutability)
             print("query", query)
             print("new_target", new_target)
             print("answer", answer)
     for mutability in list(
-        set([k.split("_")[0] for k in updated_counts_mutability.keys()])
+        set([k.split("/")[0] for k in updated_counts_mutability.keys()])
     ):
         total = updated_counts_mutability[f"{mutability}_total"]
         succ = updated_counts_mutability[f"{mutability}_succ"]
