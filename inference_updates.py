@@ -39,7 +39,7 @@ def main(args):
     outputs = {key: [] for key in ["raw_predictions", "predictions"]}
     updated_counts_mutability = collections.defaultdict(int)
     rng = np.random.default_rng(42)
-    for ex_i, ex in enumerate(tqdm(chain([ds[split] for split in args.splits]))):
+    for ex_i, ex in enumerate(tqdm(chain(*[ds[split] for split in args.splits]))):
         relation = ex["relation"]
         subject = ex["query"]["label"]
         prompt = ex["prediction"]["query"].replace(subject, "[X]")
