@@ -2,6 +2,7 @@ import argparse
 import collections
 import json
 import os
+from itertools import chain
 
 import numpy as np
 import torch
@@ -32,13 +33,13 @@ def main(args):
 
     config = get_generation_config(tokenizer)
 
-    ds = load_dataset(f"coastalcph/fm-updates-{args.model_name}")["test"]
+    ds = load_dataset(f"coastalcph/fm-updates-{args.model_name}")
     templates_ds = load_dataset("coastalcph/fm_templates")["train"]
 
     outputs = {key: [] for key in ["raw_predictions", "predictions"]}
     updated_counts_mutability = collections.defaultdict(int)
     rng = np.random.default_rng(42)
-    for ex_i, ex in enumerate(tqdm(ds)):
+    for ex_i, ex in enumerate(tqdm(chain([ds[split] for split in args.splits]))):
         relation = ex["relation"]
         subject = ex["query"]["label"]
         prompt = ex["prediction"]["query"].replace(subject, "[X]")
@@ -152,6 +153,7 @@ if __name__ == "__main__":
         required=True,
         help="Model name or path",
     )
+    parser.add_argument("--splits", nargs="+", default=["test"], help="")
     args = parser.parse_args()
 
     project_name = "prompt_updates"
