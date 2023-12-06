@@ -110,8 +110,8 @@ def main(args):
     for mutability in list(
         set([k.split("/")[0] for k in updated_counts_mutability.keys()])
     ):
-        total = updated_counts_mutability[f"{mutability}_total"]
-        succ = updated_counts_mutability[f"{mutability}_succ"]
+        total = updated_counts_mutability[f"{mutability}/total"]
+        succ = updated_counts_mutability[f"{mutability}/succ"]
         wandb.run.summary[f"{mutability}_total"] = total
         wandb.run.summary[f"{mutability}_succ"] = succ
         wandb.run.summary[f"{mutability}_succ_rate"] = succ / total
