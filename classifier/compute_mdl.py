@@ -93,6 +93,7 @@ def print_metrics(ds, dir_name):
 
 wu_llama2 = {"1-1": "0.2", "1-n": "0.1"}
 wu_alpaca = {"1-1": "0.2", "1-n": "0.0"}
+wu_falcon = {"1-1": "0.2", "1-n": "0.0"}
 for clf_type in ["1-1", "1-n"]:
     print(">>>>>>>>>>>>>>>>>>>>>>>>>", clf_type)
     model_to_results_dir = {
@@ -100,6 +101,8 @@ for clf_type in ["1-1", "1-n"]:
         "alpaca-7b": f"/projects/nlp/data/constanzam/mdl_mutability/alpaca-7b/fm_dataset_{clf_type}/",
         "llama2-7b": f"/projects/nlp/data/constanzam/mdl_mutability/llama2-7b/fm_dataset_{clf_type}/",
         "llama2-chat-7b": f"/projects/nlp/data/constanzam/mdl_mutability/llama2-chat-7b/fm_dataset_{clf_type}/",
+        "falcon-7b": f"/projects/nlp/data/constanzam/mdl_mutability/falcon-7b/fm_dataset_{clf_type}/",
+        "falcon-instruct-7b": f"/projects/nlp/data/constanzam/mdl_mutability/falcon-instruct-7b/fm_dataset_{clf_type}/",
     }
     model_to_normal_subfolder = {
         "llama-7b": "no_overlap_fix_fm_dataset_1-1"
@@ -108,6 +111,8 @@ for clf_type in ["1-1", "1-n"]:
         "llama2-7b": f"lr5e-5_wu{wu_llama2[clf_type]}_",
         "alpaca-7b": f"lr5e-5_wu{wu_alpaca[clf_type]}_",
         "llama2-chat-7b": "lr5e-5_wu0.2_",
+        "falcon-7b": f"lr5e-5_wu{wu_falcon[clf_type]}_",
+        "falcon-instruct-7b": "lr5e-5_wu0.2_",
     }
     model_to_rand_subfolder = {
         "llama-7b": f"no_overlap_fix_rand_fm_dataset_{clf_type}"
@@ -116,10 +121,13 @@ for clf_type in ["1-1", "1-n"]:
         "llama2-7b": f"lr5e-5_wu{wu_llama2[clf_type]}_rand",
         "alpaca-7b": f"lr5e-5_wu{wu_alpaca[clf_type]}_rand",
         "llama2-chat-7b": "lr5e-5_wu0.2_rand",
+        "falcon-7b": f"lr5e-5_wu{wu_falcon[clf_type]}_rand",
+        "falcon-instruct-7b": "lr5e-5_wu0.2_rand",
     }
 
     ds = load_dataset(f"coastalcph/mutability_classifier-{clf_type}")
     for model in model_to_results_dir.keys():
+        print()
         print(model)
         print("--- normal ----")
         normal_dir = os.path.join(

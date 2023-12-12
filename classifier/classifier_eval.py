@@ -16,14 +16,16 @@ from transformers import (
     Trainer,
 )
 from glob import glob
+from inference import prepare_prompt, DEF_TEMPLATE_TO_USE, DEF_INSTRUCTION
 
 
-def replace_subject(prompt_format, tokenizer, example):
+def replace_subject(prompt_format, tokenizer, prepare_prompt_func, example):
     query = example["query"].replace("_X_ .", "_X_.")
     text = query.replace("_X_.", example["answer"][0]["name"]).strip()
     if prompt_format != "{}":
         text = text[0].lower() + text[1:]
     text = prompt_format.format(text)
+    text = prepare_prompt_func(text).strip()
     return {"text": text, **tokenizer(text)}
 
 
@@ -70,7 +72,16 @@ def main(args, device):
     assert len(model_path) == 1, model_path
     model_path = model_path[0]
     tokenizer = AutoTokenizer.from_pretrained(model_path)
-    tokenized_ds = ds.map(partial(replace_subject, args.prompt_format, tokenizer))
+    tokenized_ds = ds.map(
+        partial(
+            replace_subject,
+            args.prompt_format,
+            tokenizer,
+            lambda q: prepare_prompt(
+                q, model_path, DEF_INSTRUCTION, DEF_TEMPLATE_TO_USE
+            ),
+        )
+    )
     print("Example of training example:", tokenized_ds["train"][0])
     print("Loading model")
     id2label = {1: "MUTABLE", 0: "IMMUTABLE"}

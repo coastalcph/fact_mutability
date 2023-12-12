@@ -36,11 +36,9 @@ from transformers import (
     Trainer,
     TrainingArguments,
 )
-from inference import TEMPLATES, prepare_prompt
+from inference import DEF_TEMPLATE_TO_USE, DEF_INSTRUCTION, prepare_prompt
 
 logger = logging.getLogger(__name__)
-TEMPLATE_TO_USE = "query_in_response"
-INSTRUCTION = "Complete the fact in as few words as possible"
 
 
 @dataclass
@@ -262,7 +260,7 @@ def main(device):
         partial(
             replace_subject,
             prepare_prompt=lambda q: prepare_prompt(
-                q, model_args.model_name_or_path, INSTRUCTION, TEMPLATE_TO_USE
+                q, model_args.model_name_or_path, DEF_INSTRUCTION, DEF_TEMPLATE_TO_USE
             ),
             tokenizer=tokenizer,
         )

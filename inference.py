@@ -19,6 +19,8 @@ from transformers import (
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NUM_BEAMS = 1
 MAX_ANSWER_LENGTH = 10
+DEF_TEMPLATE_TO_USE = "query_in_response"
+DEF_INSTRUCTION = "Complete the fact in as few words as possible"
 
 TEMPLATES = {
     "query_in_instructions": (
@@ -241,13 +243,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--template",
         type=str,
-        default="query_in_response",
+        default=DEF_TEMPLATE_TO_USE,
         help="query_in_instructions, query_in_response or query_in_input",
     )
     parser.add_argument(
         "--instruction",
         type=str,
-        default="Complete the fact in as few words as possible",
+        default=DEF_INSTRUCTION,
     )
     parser.add_argument(
         "--output_dir",
