@@ -5,6 +5,9 @@ from datasets import load_dataset
 from wikidata.client import Client
 from tqdm import tqdm
 from multiprocessing import Pool, Manager
+from dataset import relations
+import click
+import numpy as np
 
 from utils.data_handling import *
 
@@ -51,76 +54,54 @@ def task(input, payloads):
     return res
 
 
-def main():
-    client = Client()
-    train = build_dataset('data/templama/train_with_aliases.json')
-    val = build_dataset('data/templama/val_with_aliases.json')
-    for query in val:
-        train.add_query(query)
-    test = build_dataset('data/templama/test_with_aliases.json')
-    for query in test:
-        train.add_query(query)
+def load_queries(data_path):
+    unique_queries = dict()
+    queries = load_dataset(data_path, split="train")
+    for query in queries:
+        query_id = "_".join(query['id'].split("_")[:2])
+        if query_id not in unique_queries and len(query['answer']):
+            unique_queries[query_id] = query
+    return unique_queries
+
+
+def get_chunk(dataset, chunk):
+    num_examples = len(dataset)
+
+@click.argument("chunk")
+@click.command()
+def main(chunk):
+    chunk = int(chunk)
+    print("Running on chunk", chunk)
+
+    print("Loading pairs")
+    pairs = defaultdict(set)
+    for relation, cls in relations.items():
+        subjects = json.load(open("./data/wikidata/objects_by_freq/{}.json".format(relation)))
+        for subject in subjects:
+            subj_label = subject['label']
+            for a in subject['objects']:
+                pairs[relation].add((subj_label.lower(), a['label'].lower()))
+
+    print("Loading dataset")
+    dataset = load_dataset("DataProvenanceInitiative/flan2021_submix_original")
+    chunksize = int(len(dataset['train']) / 10)
+    print("Chunksize", chunksize)
+    from_chunk = chunk * chunksize
+    to_chunk = (chunk+1) * chunksize
+    print("From, to", from_chunk, to_chunk)
+    dataset_chunk = dataset['train'][from_chunk:to_chunk]
+    print(f"Formatting chunk {chunk}")
+    inputs = format_dataset(dataset_chunk)
+
+    print("Computing co-occurrences")
     stats = defaultdict(int)
+    for relation, ps in tqdm(pairs.items()):
+        for subj, obj in tqdm(ps):
+            subj_hit, obj_hit, cooccurrence_hit = find_cooccurrences(inputs, subj, obj)
+            if cooccurrence_hit > 0:
+                stats[f"{subj}|{obj}"] += cooccurrence_hit
 
-    if not os.path.exists('./data/qids_to_label.json'):
-        subjs = {q.id.split("_")[0] for q in train}
-        with Pool(24) as p:
-            results = tqdm(p.imap(fetch_qids_text, subjs), total=len(subjs))
-            labels = list(results)
-        qids_to_label = {q: l for q, l in labels}
-        json.dump(qids_to_label, open('./data/qids_to_label.json', 'w'))
-    else:
-        qids_to_label = json.load(open('./data/qids_to_label.json'))
-
-
-    payloads = list()
-    for query in tqdm(train):
-        subj, relation = query.id.split("_") 
-        entity_text = qids_to_label[subj]
-        answers = query.answers
-        for answer in answers:
-            for text in answer.texts:
-                payloads.append((entity_text, text.lower(), subj, answer.qcode))
-                # subj_hit, obj_hit, cooccurrence_hit = find_cooccurrences(inputs, entity_text, text.lower())
-    print("Payloads", len(payloads))
-    for p in payloads[:10]:
-        print(p)
-        
-
-    # dataset = load_dataset("conceptofmind/flan2021_submix_original")
-    # inputs = format_dataset(dataset['train'])
-    # with open("./data/flan_training.txt", "w") as fhandle:
-    #     for i in tqdm(inputs):
-    #         i = i.replace('\n', ' ')
-    #         fhandle.write(f"{i}\n")
-
-    # for input in tqdm(dataset['train']['inputs']):
-    #     input = input.lower()
-    #     res = task(input, payloads)
-    #     print(res)
-
-
-    # for query in tqdm(train):
-    #     subj, relation = query.id.split("_") 
-    #     entity = client.get(subj, load=True)
-    #     entity_text = str(entity.label).lower()
-    #     qids_to_label[subj] = entity_text
-
-
-    for query in tqdm(train):
-        subj, relation = query.id.split("_") 
-        entity_text = qids_to_label[subj]
-        answers = query.answers
-        for answer in tqdm(answers):
-            for text in answer.texts:
-                subj_hit, obj_hit, cooccurrence_hit = find_cooccurrences(inputs, entity_text, text.lower())
-                # if subj_hit > 0:
-                #     stats[subj] += subj_hit
-                # if obj_hit > 0:
-                #     stats[text] += obj_hit
-                if cooccurrence_hit > 0:
-                    stats[f"{subj}-{answer.qcode}"] += cooccurrence_hit
-    json.dump(stats, open("./data/templama_cooccurrences.json", "w"), indent=True)
+    json.dump(stats, open(f"./data/flant5_cooccurrences_{chunk}.json", "w"), indent=True)
 
 if __name__ == '__main__':
     main()
