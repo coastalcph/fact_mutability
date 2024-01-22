@@ -60,6 +60,86 @@ def get_truncated_ans(func, ground_truths, pred):
     return pred[:index_found]
 
 
+def select_equal_count_mutability(ds, test_indices, mut_types, rng, max_size_per_mut):
+    test_ds = ds.select(indices=test_indices)
+    test_count_per_mut = min(
+        min(collections.Counter(test_ds["type"]).values()), max_size_per_mut
+    )
+    final_test_indices = []
+    for mut_type in mut_types:
+        ds_mut_type = test_ds.filter(lambda ex: ex["type"] == mut_type)
+        relation_to_count = collections.Counter(ds_mut_type["relation"])
+        relations_and_counts = sorted(
+            [[r, c] for r, c in relation_to_count.items()], key=lambda x: x[1]
+        )
+        min_per_relation = min(
+            min(relation_to_count.values()),
+            int(test_count_per_mut / len(relations_and_counts)),
+        )
+        count_left = test_count_per_mut - min_per_relation * len(relations_and_counts)
+        total_per_relation = []
+        for i, (relation, counts) in enumerate(relations_and_counts):
+            equal_share = int(count_left / (len(relations_and_counts) - i))
+            if counts > min_per_relation and counts >= min_per_relation + equal_share:
+                total_per_relation.append(min_per_relation + equal_share)
+                count_left -= equal_share
+            elif counts > min_per_relation:
+                total_per_relation.append(counts)
+                count_left -= counts - min_per_relation
+            else:
+                total_per_relation.append(min_per_relation)
+        assert count_left == 0, count_left
+        for relation_i, (relation, _) in enumerate(relations_and_counts):
+            rel_indices = [
+                i for i, ex in enumerate(test_ds) if ex["relation"] == relation
+            ]
+            final_test_indices.extend(
+                rng.choice(rel_indices, total_per_relation[relation_i], replace=False)
+            )
+    return final_test_indices
+
+
+def split_validation_test(ds, mut_type_counts, rng):
+    validation_count = max(1, int(min(list(mut_type_counts.values())) * 0.1))
+    validation_indices = []
+    for mut_type in mut_type_counts.keys():
+        ds_mut_type = ds.filter(lambda ex: ex["type"] == mut_type)
+        relations = sorted(set(ds_mut_type["relation"]))
+        count_per_relation = int(validation_count / len(relations))
+        count_left = validation_count - count_per_relation * len(relations)
+        count_per_relation = [count_per_relation for _ in relations]
+        for i in range(count_left):
+            count_per_relation[i] += 1
+        assert sum(count_per_relation) == validation_count
+        for relation_i, relation in enumerate(relations):
+            rel_indices = [i for i, ex in enumerate(ds) if ex["relation"] == relation]
+            validation_indices.extend(
+                rng.choice(rel_indices, count_per_relation[relation_i], replace=False)
+            )
+    return validation_indices
+
+
+def get_dataset_dict(test_ds, val_ds=None):
+    ds_splitted = DatasetDict({"test": test_ds})
+    if val_ds is not None:
+        ds_splitted["validation"] = val_ds
+    print(ds_splitted)
+    for split in ds_splitted.keys():
+        print(split)
+        relation_counts = collections.Counter(
+            [
+                f"{r}-{t}"
+                for r, t in zip(
+                    ds_splitted[split]["relation"],
+                    ds_splitted[split]["type"],
+                )
+            ]
+        )
+        print("\n".join([f"{k}: {v}" for k, v in relation_counts.items()]))
+        print(collections.Counter(ds_splitted[split]["type"]))
+    return ds_splitted
+
+
 def main(args):
     fm_queries_ds = load_dataset("coastalcph/fm_queries")["train"]
     relation_to_mut_type = {
@@ -146,51 +226,56 @@ def main(args):
             )
             ds_data.append(ex)
     ds = Dataset.from_list(ds_data)
-    print(ds)
-    print(collections.Counter([f"{r}-{t}" for r, t in zip(ds["relation"], ds["type"])]))
+    get_dataset_dict(ds)
     mut_type_counts = collections.Counter(ds["type"])
-    print(mut_type_counts)
+    if args.only_test_split:
+        print("----------------------")
+        print("Selecting equal number of examples in test across mutability types...")
+        val_ds = None
+        indices = select_equal_count_mutability(
+            ds,
+            range(len(ds)),
+            mut_type_counts.keys(),
+            rng,
+            args.max_test_size_per_mutability,
+        )
+        test_ds = ds.select(indices=indices)
+    else:
+        print("----------------------")
+        print("Splitting val-test...")
+        validation_indices = split_validation_test(ds, mut_type_counts, rng)
+        test_indices = list(set(range(len(ds))).difference(validation_indices))
+        val_ds = ds.select(indices=validation_indices)
+        test_ds = ds.select(indices=test_indices)
+        ds_splitted = get_dataset_dict(test_ds, val_ds)
+        print("----------------------")
+        print("Selecting equal number of examples in test across mutability types...")
+        final_test_indices = select_equal_count_mutability(
+            ds,
+            test_indices,
+            mut_type_counts.keys(),
+            rng,
+            args.max_test_size_per_mutability,
+        )
+        test_ds = test_ds.select(indices=final_test_indices)
+    ds_splitted = get_dataset_dict(test_ds, val_ds)
 
-    # Split validation set.
-    validation_count = max(1, int(min(list(mut_type_counts.values())) * 0.1))
-    validation_indices = []
-    for mut_type in mut_type_counts.keys():
-        ds_mut_type = ds.filter(lambda ex: ex["type"] == mut_type)
-        relations = sorted(set(ds_mut_type["relation"]))
-        count_per_relation = int(validation_count / len(relations))
-        count_left = validation_count - count_per_relation * len(relations)
-        count_per_relation = [count_per_relation for _ in relations]
-        for i in range(count_left):
-            count_per_relation[i] += 1
-        assert sum(count_per_relation) == validation_count
-        for relation_i, relation in enumerate(relations):
-            rel_indices = [i for i, ex in enumerate(ds) if ex["relation"] == relation]
-            validation_indices.extend(
-                rng.choice(rel_indices, count_per_relation[relation_i], replace=False)
+    if args.hf_dataset_name is not None:
+        if args.check_validation_unchanged:
+            previous_val = load_dataset(args.hf_dataset_name)["validation"]
+            previous_val = collections.Counter(
+                [f"{ex['relation']}_{ex['query']['qid']}" for ex in previous_val]
             )
-    train_indices = list(set(list(range(len(ds)))).difference(validation_indices))
-    ds_splitted = DatasetDict(
-        {
-            "test": ds.select(indices=train_indices),
-            "validation": ds.select(indices=validation_indices),
-        }
-    )
-    print(ds_splitted)
-    for split in ds_splitted.keys():
-        print(split)
-        print(
-            collections.Counter(
+            curr_val = collections.Counter(
                 [
-                    f"{r}-{t}"
-                    for r, t in zip(
-                        ds_splitted[split]["relation"],
-                        ds_splitted[split]["type"],
-                    )
+                    f"{ex['relation']}_{ex['query']['qid']}"
+                    for ex in ds_splitted["validation"]
                 ]
             )
-        )
-        print(collections.Counter(ds_splitted[split]["type"]))
-    if args.hf_dataset_name is not None:
+            if previous_val != curr_val:
+                print("previous_val", previous_val)
+                print("curr_val", curr_val)
+                raise Exception("Validation splits are different")
         ds_splitted.push_to_hub(args.hf_dataset_name)
 
 
@@ -208,5 +293,14 @@ if __name__ == "__main__":
         type=str,
         help="",
     )
+    parser.add_argument("--only_test_split", action="store_true")
+    parser.add_argument("--max_test_size_per_mutability", type=int, default=164)
+    parser.add_argument("--check_validation_unchanged", action="store_true")
+    parser.add_argument(
+        "--no_check_validation_unchanged",
+        dest="check_validation_unchanged",
+        action="store_false",
+    )
+    parser.set_defaults(check_validation_unchanged=True)
     args = parser.parse_args()
     main(args)

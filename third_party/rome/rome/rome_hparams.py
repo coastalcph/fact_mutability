@@ -33,3 +33,4 @@ class ROMEHyperParams(HyperParams):
 
     empty_prompts: List = None
     config_max_length_attr: str = "n_positions"
+    add_instructions: bool = False

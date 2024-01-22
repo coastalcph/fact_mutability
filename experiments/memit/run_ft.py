@@ -20,44 +20,24 @@ from transformers import (
     set_seed,
 )
 
-from third_party.rome.rome import ROMEHyperParams
-from third_party.rome.rome.rome_main import execute_rome_and_compute_update
-from third_party.rome.util.globals import HPARAMS_DIR
+from third_party.memit.baselines.ft import FTHyperParams as HyperParams
+from third_party.memit.baselines.ft import execute_ft
+from third_party.memit.util.globals import HPARAMS_DIR
 
-ROME_UPDATE_HPARAMS = ["v_lr", "v_weight_decay"]
+UPDATE_HPARAMS = ["lr", "weight_decay", "layers"]
 
 
-def load_model(args, verbose=False):
+def main(args):
+    os.makedirs(args.output_folder, exist_ok=True)
+
     if "gpt" not in args.model_name:
-        config = AutoConfig.from_pretrained(args.model_path)
-        with init_empty_weights():
-            model = AutoModelForCausalLM.from_config(config)
-        model.tie_weights()
-        device_map = "auto"
-        if args.layers_to_cpu:
-            device_map = {
-                "model.embed_tokens": 0,
-                **{f"model.layers.{i}": 0 for i in range(28)},
-                **{f"model.layers.{i}": "cpu" for i in range(28, 32)},
-                "model.norm": "cpu",
-                "lm_head": "cpu",
-            }
-        model = load_checkpoint_and_dispatch(
-            model,
-            args.model_path,
-            device_map=device_map,
-            no_split_module_classes=["LlamaDecoderLayer"],
-            offload_folder="./",
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model_name_or_path, cache_dir=args.cache_dir
         )
-        if verbose:
-            print("hf_device_map", model.hf_device_map)
         accelerator = Accelerator()
         model = accelerator.prepare(model)
-        tokenizer_name = args.model_path
-        if args.tokenizer_name is not None:
-            tokenizer_name = args.tokenizer_name
         tok = AutoTokenizer.from_pretrained(
-            tokenizer_name,
+            args.model_name_or_path,
             use_fast=not isinstance(model, LlamaForCausalLM),
         )
     else:
@@ -65,13 +45,7 @@ def load_model(args, verbose=False):
         tok = AutoTokenizer.from_pretrained(args.model_name)
 
     tok.pad_token = tok.eos_token
-    if verbose:
-        print(model.config)
-    return model, tok
-
-
-def main(args):
-    os.makedirs(args.output_folder, exist_ok=True)
+    print(model.config)
 
     requests = [
         {
@@ -103,22 +77,30 @@ def main(args):
 
     # Execute rewrite
     params_path = os.path.join(
-        HPARAMS_DIR, "ROME", f"{args.model_name.replace('/', '_')}.json"
+        HPARAMS_DIR, "FT", f"{args.model_name.replace('/', '_')}.json"
     )
-    hparams = ROMEHyperParams.from_json(params_path)
-    for hparam_update in ROME_UPDATE_HPARAMS:
+    print("Params path", params_path)
+    hparams = HyperParams.from_json(params_path)
+    for hparam_update in UPDATE_HPARAMS:
         if getattr(args, hparam_update) is not None:
             setattr(hparams, hparam_update, getattr(args, hparam_update))
     for k, v in asdict(hparams).items():
-        wandb.config[f"rome_hparams_{k}"] = v
-
-    model, tok = load_model(args, verbose=True)
+        wandb.config[f"ft_hparams_{k}"] = v
     results = []
     for request in tqdm(requests, desc="Requests"):
         print(request)
         output = io.StringIO()
         with redirect_stdout(output):
-            execute_rome_and_compute_update(model, tok, [request], hparams)
+            deltas = execute_ft(model, tok, request, hparams)
+            for param_name, upd_matrix in deltas.items():
+                for n in [1, 2, float("inf")]:
+                    print(
+                        "Update norm [{}] ({}): {}".format(
+                            param_name,
+                            n,
+                            torch.linalg.vector_norm(upd_matrix, ord=n).item(),
+                        )
+                    )
         print(output.getvalue())
 
         # Extract data from stdout.
@@ -141,10 +123,12 @@ def main(args):
                 data["prob_old_token"].append(float(m.group(2)))
             elif line.startswith("Update norm"):
                 m = re.match(
-                    "Update norm \((.*)\): (.*)",
+                    "Update norm \[(.*)\] \((.*)\): (.*)",
                     line,
                 )
-                data[f"update_matrix_norm_{m.group(1)}"].append(float(m.group(2)))
+
+                data[f"l{m.group(2)}-{m.group(1)}"].append(float(m.group(3)))
+
         data["request"] = request
         print(data)
         print("----------------------------------------------")
@@ -159,7 +143,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Inference")
     parser.add_argument(
-        "--model_path",
+        "--model_name_or_path",
         required=True,
         type=str,
         help="",
@@ -171,12 +155,7 @@ if __name__ == "__main__":
         help="",
     )
     parser.add_argument(
-        "--layers_to_cpu",
-        action="store_true",
-        help="",
-    )
-    parser.add_argument(
-        "--tokenizer_name",
+        "--cache_dir",
         default=None,
         type=str,
         help="",
@@ -206,13 +185,20 @@ if __name__ == "__main__":
         help="",
     )
     parser.add_argument(
-        "--v_lr",
+        "--lr",
         default=None,
         type=float,
         help="",
     )
     parser.add_argument(
-        "--v_weight_decay",
+        "--layers",
+        default=None,
+        type=int,
+        nargs="*",
+        help="",
+    )
+    parser.add_argument(
+        "--weight_decay",
         default=None,
         type=float,
         help="",
@@ -224,7 +210,8 @@ if __name__ == "__main__":
         help="",
     )
     args = parser.parse_args()
-    wandb.init(project="rome", name=args.exp_name, config=args)
+    wandb.init(project="ft", name=args.exp_name, config=args)
     torch.manual_seed(args.seed)
     set_seed(args.seed)
     main(args)
+

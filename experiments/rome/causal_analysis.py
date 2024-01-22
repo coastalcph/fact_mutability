@@ -32,22 +32,7 @@ torch.set_grad_enabled(False)
 
 
 def load_model_and_tok(args):
-    if args.cache_dir is not None:
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model_name_or_path, cache_dir=args.cache_dir
-        )
-    else:
-        config = AutoConfig.from_pretrained(args.model_name_or_path)
-        with init_empty_weights():
-            model = AutoModelForCausalLM.from_config(config)
-        model.tie_weights()
-        model = load_checkpoint_and_dispatch(
-            model,
-            args.model_name_or_path,
-            device_map="auto",
-            no_split_module_classes=["LlamaDecoderLayer"],
-        )
-        print(model.hf_device_map)
+    model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path).to("cuda")
     accelerator = Accelerator()
     model = accelerator.prepare(model)
     tokenizer = AutoTokenizer.from_pretrained(
@@ -256,10 +241,18 @@ def plot_last_subj_token(differences, low_score, avg_over_n, modelname, kind, sa
 
 
 def main(args):
-    cache_output_dir = os.path.join(
-        args.output_folder, args.model_name, "cache_hidden_flow"
+    data_id = "_".join(
+        [
+            args.split,
+            "" if not args.mutability_type else args.mutability_type,
+        ]
     )
-    pdf_output_dir = os.path.join(args.output_folder, args.model_name, "plots")
+    cache_output_dir = os.path.join(
+        args.output_folder, args.model_name, data_id, "cache_hidden_flow"
+    )
+    pdf_output_dir = os.path.join(args.output_folder, args.model_name, data_id, "plots")
+    wandb.config["cache_output_dir"] = cache_output_dir
+    wandb.config["plots_output_dir"] = pdf_output_dir
     os.makedirs(cache_output_dir, exist_ok=True)
     os.makedirs(pdf_output_dir, exist_ok=True)
     mt = load_model_and_tok(args)
@@ -274,14 +267,18 @@ def main(args):
 
     print("Computing noise level...")
     ds = load_dataset(args.updates_dataset)
+    ds = ds[args.split]
+    if args.mutability_type is not None:
+        ds = ds.filter(lambda ex: ex["type"] == args.mutability_type)
+    print("Computing causal analysis for", len(ds))
     noise_level = 3 * collect_embedding_std(
         mt,
-        [ex["query"]["label"] for ex in ds["validation"]],
-        subjects_from_ds="known_facts",
+        [ex["query"]["label"] for ex in ds],
+        subjects_from_ds=data_id,
     )
     print(f"Using noise level {noise_level}")
     kind = "mlp"
-    for ex in tqdm(ds["validation"], desc="Validation examples"):
+    for ex in tqdm(ds, desc="Examples"):
         ex_id = f"{ex['query']['rel_id']}_{ex['query']['qid']}"
         filename = os.path.join(cache_output_dir, f"{ex_id}{kind}.npz")
         if not os.path.isfile(filename):
@@ -331,6 +328,7 @@ def main(args):
     print(
         f"Biggest effect on {kind} on average in layer {np.argmax(scores_last_subj_token)}"
     )
+    wandb.summary["avg_best_layer"] = np.argmax(scores_last_subj_token)
 
 
 if __name__ == "__main__":
@@ -365,6 +363,28 @@ if __name__ == "__main__":
         type=str,
         help="",
     )
+    parser.add_argument(
+        "--split",
+        default="validation",
+        type=str,
+        help="",
+    )
+    parser.add_argument(
+        "--mutability_type",
+        default=None,
+        type=str,
+        help="",
+    )
     args = parser.parse_args()
-    wandb.init(project="causal_analysis", name=args.model_name, config=args)
+    wandb.init(
+        project="causal_analysis",
+        name=" ".join(
+            [
+                args.model_name,
+                args.split,
+                "" if not args.mutability_type else args.mutability_type,
+            ]
+        ),
+        config=args,
+    )
     main(args)

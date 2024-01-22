@@ -8,19 +8,25 @@ from rome import repr_tools
 from util import nethook
 
 from .rome_hparams import ROMEHyperParams
+from inference import TEMPLATES
+
+TEMPLATE_TO_USE = TEMPLATES["query_in_response"]
+INSTRUCTION = "Complete the fact in as few words as possible"
 
 
 def get_prob(model, inputs, targets, answer_ids):
     logits = model(**inputs).logits
     log_probs = torch.log_softmax(logits, dim=2)
-    loss = torch.gather(
+    loss = -torch.gather(
         log_probs,
         2,
         torch.where(targets != -100, targets, 0).unsqueeze(2),
     ).squeeze(2)
     mask = (targets != -100).float()
-    loss = -(loss * mask).sum(1) / answer_ids.size(0)
-    return torch.exp(-loss).mean().item()
+    first_token_indices = torch.argmax(mask, dim=-1)
+    loss_first_token = loss[torch.arange(len(loss)), first_token_indices]
+    loss = (loss * mask).sum(1) / answer_ids.size(0)
+    return torch.exp(-loss), torch.exp(-loss_first_token)
 
 
 def concat_context_obj(context, obj):
@@ -39,6 +45,7 @@ def compute_v(
     layer: int,
     left_vector: torch.Tensor,
     context_templates: List[str],
+    add_instructions: bool = False,
 ) -> torch.Tensor:
     """
     Computes the value (right) vector for the rank-1 update.
@@ -56,13 +63,15 @@ def compute_v(
     ).to("cuda")
 
     # Compile list of rewriting and KL x/y pairs
-    rewriting_prompts, kl_prompts = [
+    kl_prompts = ["{} is a"]
+    if add_instructions:
+        kl_prompts = [TEMPLATE_TO_USE.format(INSTRUCTION, p) for p in kl_prompts]
+    rewriting_prompts = [
         concat_context_obj(
             context.format(request["prompt"]), tok.decode(target_ids[:-1])
         )
         for context in context_templates
-    ], ["{} is a"]
-    # TODO: add the instruction to all the prompts
+    ]
     all_prompts = rewriting_prompts + kl_prompts
     old_answer_prompts = [
         concat_context_obj(
@@ -164,7 +173,9 @@ def compute_v(
         ) as tr:
             logits = model(**input_tok).logits
             with torch.no_grad():
-                prob_old = get_prob(model, old_answer_tok, old_targets, old_answer_ids)
+                prob_old, prob_old_first_token = get_prob(
+                    model, old_answer_tok, old_targets, old_answer_ids
+                )
 
             # Compute distribution for KL divergence
             kl_logits = torch.stack(
@@ -181,15 +192,17 @@ def compute_v(
         # Compute loss on rewriting targets
         log_probs = torch.log_softmax(logits, dim=2)
 
-        loss = torch.gather(
+        loss = -torch.gather(
             log_probs,
             2,
             torch.where(rewriting_targets != -100, rewriting_targets, 0).unsqueeze(2),
         ).squeeze(2)
         mask = (rewriting_targets != -100).float()
+        first_token_indices = torch.argmax(mask, dim=-1)
+        loss_first_token = loss[torch.arange(len(loss)), first_token_indices]
 
         # Aggregate total losses
-        nll_loss_each = -(loss * mask).sum(1) / target_ids.size(0)
+        nll_loss_each = (loss * mask).sum(1) / target_ids.size(0)
         nll_loss = nll_loss_each.mean()
         kl_loss = hparams.kl_factor * torch.nn.functional.kl_div(
             kl_distr_init, kl_log_probs, log_target=True, reduction="batchmean"
@@ -203,7 +216,13 @@ def compute_v(
             f"loss {np.round(loss.item(), 3)} = {np.round(nll_loss.item(), 3)} + {np.round(kl_loss.item(), 3)} + {np.round(weight_decay.item(), 3)} "
             f"avg prob of [{request['target_new']['str']}] "
             f"{torch.exp(-nll_loss_each).mean().item()}"
-            f" / avg prob of [{request['old_answer']['str']}] {prob_old}"
+            f" / avg prob of [{request['old_answer']['str']}] {prob_old.mean().item()}"
+        )
+        # We assume the first context template is the empty context.
+        print(
+            f"first token prob of [{request['target_new']['str']}] "
+            f"{torch.exp(-loss_first_token)[0].item()}"
+            f" / first token prob of [{request['old_answer']['str']}] {prob_old_first_token[0].item()}"
         )
         if loss < 5e-2:
             break

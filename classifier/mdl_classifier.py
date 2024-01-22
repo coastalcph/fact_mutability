@@ -36,6 +36,7 @@ from transformers import (
     Trainer,
     TrainingArguments,
 )
+from inference import DEF_TEMPLATE_TO_USE, DEF_INSTRUCTION, prepare_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -88,10 +89,11 @@ class ModelArguments:
     )
 
 
-def replace_subject(tokenizer, example):
+def replace_subject(example, prepare_prompt, tokenizer, return_tensors=None):
     query = example["query"].replace("_X_ .", "_X_.")
     text = query.replace("_X_.", example["answer"][0]["name"]).strip()
-    return tokenizer(text)
+    text = prepare_prompt(text).strip()
+    return {"text": text, **tokenizer(text, return_tensors=return_tensors)}
 
 
 def compute_metrics(eval_pred):
@@ -146,8 +148,8 @@ def randomize_labels_per_template(seed, ds):
     rng = np.random.default_rng(seed)
     old_labels = defaultdict(dict)
     for split in ds.keys():
-        for id_, l in zip(ds[split]["id"], ds[split]["label"]):
-            old_labels[split][get_relation_template_id_from_id(id_)] = l
+        for id_, label in zip(ds[split]["id"], ds[split]["label"]):
+            old_labels[split][get_relation_template_id_from_id(id_)] = label
     print("old_labels:", old_labels)
     relation_templates = [r_t for s in ds.keys() for r_t in old_labels[s].keys()]
     new_labels = {
@@ -155,7 +157,7 @@ def randomize_labels_per_template(seed, ds):
         for i, label in enumerate(rng.integers(0, 2, len(relation_templates)))
     }
     for split in ds.keys():
-        print("---", split, f"---")
+        print("---", split, "---")
         for r_t in sorted(old_labels[split].keys()):
             if old_labels[split][r_t] != new_labels[r_t]:
                 print(f"{r_t} changed {old_labels[split][r_t]}->{new_labels[r_t]}")
@@ -213,6 +215,7 @@ def main(device):
     os.makedirs(training_args.output_dir)
 
     tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
+    tokenizer.pad_token = tokenizer.eos_token
     ds = load_dataset(data_args.dataset_name, use_auth_token=True)
     ds = ds.rename_column("is_mutable", "label").shuffle(seed=training_args.seed)
     if data_args.subsample_train < 1.0:
@@ -253,7 +256,15 @@ def main(device):
     print(f'train_portion_to_train: {len(ds["train_portion_to_train"])}')
     print(f'train_portion_to_eval: {len(ds["train_portion_to_eval"])}')
 
-    tokenized_ds = ds.map(partial(replace_subject, tokenizer))
+    tokenized_ds = ds.map(
+        partial(
+            replace_subject,
+            prepare_prompt=lambda q: prepare_prompt(
+                q, model_args.model_name_or_path, DEF_INSTRUCTION, DEF_TEMPLATE_TO_USE
+            ),
+            tokenizer=tokenizer,
+        )
+    )
     print("Example of training example:", tokenized_ds["train"][0])
     print("Loading model")
     id2label = {1: "MUTABLE", 0: "IMMUTABLE"}
@@ -265,6 +276,7 @@ def main(device):
         id2label=id2label,
         label2id=label2id,
     ).to(device)
+    model.config.pad_token_id = tokenizer.pad_token_id
 
     trainer = Trainer(
         model=model,

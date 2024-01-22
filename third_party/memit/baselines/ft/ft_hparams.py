@@ -25,3 +25,5 @@ class FTHyperParams(HyperParams):
     # Defaults
     batch_size: int = 64
     wd_power_law: tuple = None  # Scale weight decay by number of edits
+
+    add_instructions: bool = False

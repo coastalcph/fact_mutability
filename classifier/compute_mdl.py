@@ -1,7 +1,9 @@
-import json
 import collections
+import json
 import os
 from glob import glob
+
+import matplotlib.pyplot as plt
 import numpy as np
 from datasets import load_dataset
 
@@ -20,16 +22,20 @@ def get_acc(dir_name, n=10):
         return data[key[0]]
 
 
-def get_code_length(dir_name, n):
+def get_online_metric(dir_name, n, end_metric_name):
     f = glob(os.path.join(dir_name, f"{n}_*/online_portion_results.json"))
     if len(f) == 0:
         f = glob(os.path.join(dir_name, f"{n}_*/f_online_portion_results.json"))
     assert len(f) == 1, f"{dir_name} {n}"
     with open(f[0]) as eval_results:
         data = json.load(eval_results)
-        key = [k for k in data.keys() if k.endswith("sum_log2_prob")]
+        key = [k for k in data.keys() if k.endswith(end_metric_name)]
         assert len(key) == 1, data.keys()
         return data[key[0]]
+
+
+def get_code_length(dir_name, n):
+    return get_online_metric(dir_name, n, end_metric_name="sum_log2_prob")
 
 
 def compute_online_codelength(dir_name):
@@ -39,6 +45,28 @@ def compute_online_codelength(dir_name):
     print(dir_name)
     print(log2)
     return sum([log2[i] for i in range(0, 10)])
+
+
+def save_plot_accuracies(model_name, rand_dir, normal_dir):
+    labels = ["0.1", "0.2", "0.4", "0.8", "1.6", "3.2", "6.25", "12.5", "25", "50"]
+    rand_accuracies = []
+    normal_accuracies = []
+    for i in range(0, 10):
+        rand_accuracies.append(
+            get_online_metric(rand_dir, i, end_metric_name="accuracy")
+        )
+        normal_accuracies.append(
+            get_online_metric(normal_dir, i, end_metric_name="accuracy")
+        )
+    x = np.arange(len(rand_accuracies))
+    plt.plot(x, rand_accuracies, "-o", label="random")
+    plt.plot(x, normal_accuracies, "-o", label="normal")
+    plt.legend()
+    plt.grid()
+    plt.title(f"Online accuracy of {model_name}")
+    plt.xticks(x, labels)
+    plt.savefig(f"online_acc_plots/{model_name}.png")
+    plt.close()
 
 
 def print_metrics(ds, dir_name):
@@ -63,8 +91,51 @@ def print_metrics(ds, dir_name):
     print("Final prob. acc:", get_acc(dir_name))
 
 
-ds = load_dataset("coastalcph/fm_classifier_mutable-1-*")
-print("--- normal ----")
-print_metrics(ds, os.path.join(RESULTS_DIR, "normal_fm_dataset/"))
-print("--- random ----")
-print_metrics(ds, os.path.join(RESULTS_DIR, "random_fm_dataset/"))
+wu_llama2 = {"1-1": "0.2", "1-n": "0.1"}
+wu_alpaca = {"1-1": "0.2", "1-n": "0.0"}
+wu_falcon = {"1-1": "0.2", "1-n": "0.0"}
+for clf_type in ["1-1", "1-n"]:
+    print(">>>>>>>>>>>>>>>>>>>>>>>>>", clf_type)
+    model_to_results_dir = {
+        "llama-7b": "/projects/nlp/data/constanzam/mdl_mutability",
+        "alpaca-7b": f"/projects/nlp/data/constanzam/mdl_mutability/alpaca-7b/fm_dataset_{clf_type}/",
+        "llama2-7b": f"/projects/nlp/data/constanzam/mdl_mutability/llama2-7b/fm_dataset_{clf_type}/",
+        "llama2-chat-7b": f"/projects/nlp/data/constanzam/mdl_mutability/llama2-chat-7b/fm_dataset_{clf_type}/",
+        "falcon-7b": f"/projects/nlp/data/constanzam/mdl_mutability/falcon-7b/fm_dataset_{clf_type}/",
+        "falcon-instruct-7b": f"/projects/nlp/data/constanzam/mdl_mutability/falcon-instruct-7b/fm_dataset_{clf_type}/",
+    }
+    model_to_normal_subfolder = {
+        "llama-7b": "no_overlap_fix_fm_dataset_1-1"
+        if clf_type == "1-1"
+        else "llama-7B/fm_dataset_1-n/lr5e-5_wu0.2_no_overlap_fix",
+        "llama2-7b": f"lr5e-5_wu{wu_llama2[clf_type]}_",
+        "alpaca-7b": f"lr5e-5_wu{wu_alpaca[clf_type]}_",
+        "llama2-chat-7b": "lr5e-5_wu0.2_",
+        "falcon-7b": f"lr5e-5_wu{wu_falcon[clf_type]}_",
+        "falcon-instruct-7b": "lr5e-5_wu0.2_",
+    }
+    model_to_rand_subfolder = {
+        "llama-7b": f"no_overlap_fix_rand_fm_dataset_{clf_type}"
+        if clf_type == "1-1"
+        else "llama-7B/fm_dataset_1-n/lr5e-5_wu0.2_rand",
+        "llama2-7b": f"lr5e-5_wu{wu_llama2[clf_type]}_rand",
+        "alpaca-7b": f"lr5e-5_wu{wu_alpaca[clf_type]}_rand",
+        "llama2-chat-7b": "lr5e-5_wu0.2_rand",
+        "falcon-7b": f"lr5e-5_wu{wu_falcon[clf_type]}_rand",
+        "falcon-instruct-7b": "lr5e-5_wu0.2_rand",
+    }
+
+    ds = load_dataset(f"coastalcph/mutability_classifier-{clf_type}")
+    for model in model_to_results_dir.keys():
+        print()
+        print(model)
+        print("--- normal ----")
+        normal_dir = os.path.join(
+            model_to_results_dir[model], model_to_normal_subfolder[model]
+        )
+        print_metrics(ds, normal_dir)
+        print("--- random ----")
+        rand_dir = os.path.join(
+            model_to_results_dir[model], model_to_rand_subfolder[model]
+        )
+        print_metrics(ds, rand_dir)

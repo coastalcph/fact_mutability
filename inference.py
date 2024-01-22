@@ -13,11 +13,14 @@ from transformers import (
     GenerationConfig,
     LlamaTokenizer,
     T5TokenizerFast,
+    PreTrainedTokenizerFast,
 )
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NUM_BEAMS = 1
 MAX_ANSWER_LENGTH = 10
+DEF_TEMPLATE_TO_USE = "query_in_response"
+DEF_INSTRUCTION = "Complete the fact in as few words as possible"
 
 TEMPLATES = {
     "query_in_instructions": (
@@ -38,16 +41,20 @@ TEMPLATES = {
 }
 
 
-def prepare_prompt(query, args):
-    if "alpaca" in args.model_name_or_path:
-        instruction = args.instruction
-        template = TEMPLATES[args.template]
+def prepare_prompt(query, model_name_or_path, instruction, template=None):
+    if "alpaca" in model_name_or_path:
+        instruction = instruction
+        template = TEMPLATES[template]
         return template.format(instruction, query)
-    elif "flan" in args.model_name_or_path:
+    elif "flan" in model_name_or_path:
         if len(args.instruction):
-            return "{}: {}".format(args.instruction, query)
+            return "{}: {}".format(instruction, query)
         else:
             return query
+    elif "instruct" in model_name_or_path:
+        return "{}\n{}".format(instruction, query)
+    elif "chat" in model_name_or_path:
+        return "[INST] {}: {} [/INST] ".format(instruction, query)
     else:
         return query
 
@@ -55,6 +62,9 @@ def prepare_prompt(query, args):
 get_sequence = {
     # Ignore the prompt.
     LlamaTokenizer: lambda seq, input_ids: seq[input_ids.shape[1] :].cpu().tolist(),
+    PreTrainedTokenizerFast: lambda seq, input_ids: seq[input_ids.shape[1] :]
+    .cpu()
+    .tolist(),
     # Ignore the BOS token.
     T5TokenizerFast: lambda seq, _: seq.cpu().tolist()[1:],
 }
@@ -63,13 +73,12 @@ ids_to_ignore = {
     LlamaTokenizer: [1, 2],
     # Ignore EOS.
     T5TokenizerFast: [1],
+    # Ignore EOS.
+    PreTrainedTokenizerFast: [11],
 }
 # Token id of a full stop when not at the beggining of a word so it could be
 # different than tokenizer.tokens_to_ids(tokenizer.tokenize('.')).
-full_stop = {
-    LlamaTokenizer: 29889,
-    T5TokenizerFast: 5,
-}
+full_stop = {LlamaTokenizer: 29889, T5TokenizerFast: 5, PreTrainedTokenizerFast: 25}
 
 
 def get_scores(model_output, input_ids, prompt, query, tokenizer):
@@ -86,10 +95,15 @@ def get_scores(model_output, input_ids, prompt, query, tokenizer):
     if trimmed_sequence and trimmed_sequence[-1] == full_stop[type(tokenizer)]:
         token_scores = token_scores[:-1]
         trimmed_sequence = trimmed_sequence[:-1]
-    answer = tokenizer.decode(trimmed_sequence)
+    answer = tokenizer.decode(trimmed_sequence).strip()
     words = answer.split()
-    if not token_scores or not words or (
-        (len(token_scores) == 1 or len(words) == 1) and words[0] in ["the", "a", "an"]
+    if (
+        not token_scores
+        or not words
+        or (
+            (len(token_scores) == 1 or len(words) == 1)
+            and words[0] in ["the", "a", "an"]
+        )
     ):
         print(
             "Warning: Empty generation. input_ids={}, output_sequence={}".format(
@@ -105,8 +119,11 @@ def get_scores(model_output, input_ids, prompt, query, tokenizer):
     return answer, token_scores, first_token_score, perplexity
 
 
-def inference(dataset, tokenizer, model, args):
-    config = GenerationConfig(
+def get_generation_config(tokenizer):
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    return GenerationConfig(
         max_new_tokens=50,
         num_beams=NUM_BEAMS,
         do_sample=False,
@@ -114,14 +131,20 @@ def inference(dataset, tokenizer, model, args):
         output_scores=False,
         num_return_sequences=NUM_BEAMS,
         return_dict_in_generate=True,
+        pad_token_id=tokenizer.pad_token_id,
     )
 
+
+def inference(dataset, tokenizer, model, args):
+    config = get_generation_config(tokenizer)
     predictions = []
     outputs = {key: [] for key in ["raw_predictions", "predictions"]}
     for line in tqdm(dataset):
         qcode, query = line.split("\t")
         with torch.no_grad():
-            prompt = prepare_prompt(query, args)
+            prompt = prepare_prompt(
+                query, args.model_name_or_path, args.instruction, args.template
+            )
             input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
             model_output = model.generate(
                 input_ids, generation_config=config, output_scores=True
@@ -168,7 +191,10 @@ def main(args):
 
     print("Loading model")
     use_fast = True
-    if "alpaca" in args.model_name_or_path or "llama" in args.model_name_or_path:
+    if (
+        "alpaca" in args.model_name_or_path
+        or "llama" in args.model_name_or_path.lower()
+    ):
         # the fact tokenizer causes issues with protobuf and tokenizers libraries
         use_fast = False
     tokenizer = AutoTokenizer.from_pretrained(
@@ -187,7 +213,6 @@ def main(args):
         model = AutoModelForSeq2SeqLM.from_pretrained(
             args.model_name_or_path, load_in_8bit=True, device_map="auto"
         )
-    print("model.hf_device_map", model.hf_device_map)
     model.eval()
 
     print("Loading dataset")
@@ -218,13 +243,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--template",
         type=str,
-        default="query_in_response",
+        default=DEF_TEMPLATE_TO_USE,
         help="query_in_instructions, query_in_response or query_in_input",
     )
     parser.add_argument(
         "--instruction",
         type=str,
-        default="Complete the fact in as few words as possible",
+        default=DEF_INSTRUCTION,
     )
     parser.add_argument(
         "--output_dir",
