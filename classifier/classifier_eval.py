@@ -107,7 +107,7 @@ def main(args, device):
     )
     if args.evaluate_over_frequency:
         print("Preprocessing ds by frequency...")
-        tokenized_ds = preprocess_ds_by_freq(tokenized_ds)
+        tokenized_ds = preprocess_ds_by_freq(args, tokenized_ds)
     print("Example of training example:", tokenized_ds[list(tokenized_ds.keys())[0]][0])
     print("Loading model")
     id2label = {1: "MUTABLE", 0: "IMMUTABLE"}
