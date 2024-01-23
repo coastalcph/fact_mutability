@@ -24,7 +24,11 @@ def preprocess_ds_by_freq(args, ds):
     relation_to_count_filename = {}
     for f in glob(args.frequency_files_pattern):
         relation = os.path.basename(f)[: -len("_with_counts.json")]
+        if "yellow" in relation_to_count_filename[relation]:
+            relation_to_count_filename[relation] = f
+            continue
         relation_to_count_filename[relation] = f
+
     all_counts = []
     for relation in args.relations:
         with open(relation_to_count_filename[relation]) as f:
