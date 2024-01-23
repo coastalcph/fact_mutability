@@ -27,7 +27,7 @@ def preprocess_ds_by_freq(args, ds):
         if relation in relation_to_count_filename:
             if "yellow" in relation_to_count_filename[relation]:
                 relation_to_count_filename[relation] = f
-                continue
+            continue
         relation_to_count_filename[relation] = f
 
     all_counts = []
