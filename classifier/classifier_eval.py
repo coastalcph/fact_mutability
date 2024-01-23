@@ -6,7 +6,8 @@ from functools import partial
 import numpy as np
 import torch
 import wandb
-from datasets import load_dataset
+import json
+from datasets import load_dataset, concatenate_datasets, DatasetDict
 from mdl_classifier import compute_metrics
 from transformers import (
     AutoModelForSequenceClassification,
@@ -17,6 +18,31 @@ from transformers import (
 )
 from glob import glob
 from inference import prepare_prompt, DEF_TEMPLATE_TO_USE, DEF_INSTRUCTION
+
+
+def preprocess_ds_by_freq(args, ds):
+    relation_to_count_filename = {}
+    for f in glob(args.frequency_files_pattern):
+        relation = os.path.basename(f)[: -len("_with_counts.json")]
+        relation_to_count_filename[relation] = f
+    all_counts = []
+    for relation in args.relations:
+        with open(relation_to_count_filename[relation]) as f:
+            subj_count = json.load(f)[:1500]
+        subj_count = {s: c for s, c in subj_count}
+        all_counts.extend(subj_count.values())
+        ds[relation] = ds[relation].map(
+            lambda ex: {"subj_count": subj_count[ex["id"].split("_")[0]]}
+        )
+    ds = concatenate_datasets([ds[r] for r in args.relations])
+    freq_splits = {}
+    percentiles = np.percentile(all_counts, np.arange(10, 101, 10))
+    wandb.run.summary["percentiles"] = percentiles
+    for i, percentile in enumerate(percentiles):
+        freq_splits[f"percentile_{i}"] = ds.filter(
+            lambda ex: ex["subj_count"] <= percentile
+        )
+    return DatasetDict(freq_splits)
 
 
 def replace_subject(prompt_format, tokenizer, prepare_prompt_func, example):
@@ -42,6 +68,7 @@ def main(args, device):
 
     ds = load_dataset("coastalcph/fm_queries")
     ds["all_fm"] = ds["train"]
+    ds.pop("train")
     relation_to_mutability = {
         r: m for r, m in zip(ds["all_fm"]["relation"], ds["all_fm"]["type"])
     }
@@ -82,7 +109,10 @@ def main(args, device):
             ),
         )
     )
-    print("Example of training example:", tokenized_ds["train"][0])
+    if args.evaluate_over_frequency:
+        print("Preprocessing ds by frequency...")
+        tokenized_ds = preprocess_ds_by_freq(args, tokenized_ds)
+    print("Example of training example:", tokenized_ds[list(tokenized_ds.keys())[0]][0])
     print("Loading model")
     id2label = {1: "MUTABLE", 0: "IMMUTABLE"}
     label2id = {"MUTABLE": 1, "IMMUTABLE": 0}
@@ -102,15 +132,24 @@ def main(args, device):
     )
 
     all_metrics = {}
-    for relation in args.relations:
-        mut_type = relation_to_mutability[relation]
-        metrics = trainer.evaluate(
-            eval_dataset=tokenized_ds[relation],
-            metric_key_prefix=relation,
-        )
-        metrics[f"{relation}_samples"] = len(tokenized_ds[relation])
-        all_metrics.update({f"{mut_type}/{k}": v for k, v in metrics.items()})
-        trainer.save_metrics(f"{mut_type}_{relation}", metrics)
+    if args.evaluate_over_frequency:
+        for freq_split in tokenized_ds.keys():
+            metrics = trainer.evaluate(
+                eval_dataset=tokenized_ds[freq_split],
+                metric_key_prefix=freq_split,
+            )
+            metrics[f"{freq_split}_samples"] = len(tokenized_ds[freq_split])
+            trainer.save_metrics(freq_split, metrics)
+    else:
+        for relation in args.relations:
+            mut_type = relation_to_mutability[relation]
+            metrics = trainer.evaluate(
+                eval_dataset=tokenized_ds[relation],
+                metric_key_prefix=relation,
+            )
+            metrics[f"{relation}_samples"] = len(tokenized_ds[relation])
+            all_metrics.update({f"{mut_type}/{k}": v for k, v in metrics.items()})
+            trainer.save_metrics(f"{mut_type}_{relation}", metrics)
     wandb.log(all_metrics)
 
 
@@ -149,6 +188,8 @@ if __name__ == "__main__":
         help="",
     )
     parser.add_argument("--relations", nargs="+", default=[])
+    parser.add_argument("--evaluate_over_frequency", action="store_true")
+    parser.add_argument("--frequency_files_pattern", type=str)
     args = parser.parse_args()
     if args.prompt_format is not None:
         args.prompt_format = bytes(args.prompt_format, "utf-8").decode("unicode_escape")
