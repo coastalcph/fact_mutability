@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import wandb
 import json
-from datasets import load_dataset, concatenate_datasets
+from datasets import load_dataset, concatenate_datasets, DatasetDict
 from mdl_classifier import compute_metrics
 from transformers import (
     AutoModelForSequenceClassification,
@@ -35,11 +35,14 @@ def preprocess_ds_by_freq(args, ds):
             lambda ex: {"subj_count": subj_count[ex["id"].split("_")[0]]}
         )
     ds = concatenate_datasets([ds[r] for r in args.relations])
+    freq_splits = {}
     percentiles = np.percentile(all_counts, np.arange(10, 101, 10))
     wandb.run.summary["percentiles"] = percentiles
     for i, percentile in enumerate(percentiles):
-        ds[f"percentile_{i}"] = ds.filter(lambda ex: ex["subj_count"] <= percentile)
-    return ds
+        freq_splits[f"percentile_{i}"] = ds.filter(
+            lambda ex: ex["subj_count"] <= percentile
+        )
+    return DatasetDict(freq_splits)
 
 
 def replace_subject(prompt_format, tokenizer, prepare_prompt_func, example):
