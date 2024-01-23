@@ -135,10 +135,10 @@ def main(args, device):
     if args.evaluate_over_frequency:
         for freq_split in tokenized_ds.keys():
             metrics = trainer.evaluate(
-                eval_dataset=tokenized_ds[relation],
-                metric_key_prefix=relation,
+                eval_dataset=tokenized_ds[freq_split],
+                metric_key_prefix=freq_split,
             )
-            metrics[f"{relation}_samples"] = len(tokenized_ds[relation])
+            metrics[f"{freq_split}_samples"] = len(tokenized_ds[freq_split])
             trainer.save_metrics(freq_split, metrics)
     else:
         for relation in args.relations:
