@@ -25,14 +25,15 @@ def preprocess_ds_by_freq(args, ds):
     for f in glob(args.frequency_files_pattern):
         relation = os.path.basename(f)[: -len("_with_counts.json")]
         relation_to_count_filename[relation] = f
-    ds.map(lambda ex: {"subj_count": -1})
     all_counts = []
     for relation in args.relations:
         with open(relation_to_count_filename[relation]) as f:
             subj_count = json.load(f)[:1500]
         subj_count = {s: c for s, c in subj_count}
         all_counts.extend(subj_count.values())
-        ds[relation].map(lambda ex: {"subj_count": subj_count[ex["id"].split("_")[0]]})
+        ds[relation] = ds[relation].map(
+            lambda ex: {"subj_count": subj_count[ex["id"].split("_")[0]]}
+        )
     ds = concatenate_datasets([ds[r] for r in args.relations])
     percentiles = np.percentile(all_counts, np.arange(10, 101, 10))
     wandb.run.summary["percentiles"] = percentiles
