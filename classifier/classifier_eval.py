@@ -43,10 +43,13 @@ def preprocess_ds_by_freq(args, ds):
     freq_splits = {}
     percentiles = np.percentile(all_counts, np.arange(10, 101, 10))
     wandb.run.summary["percentiles"] = percentiles
+    lower_bound = 0
     for i, percentile in enumerate(percentiles):
         freq_splits[f"percentile_{i}"] = ds.filter(
-            lambda ex: ex["subj_count"] <= percentile
+            lambda ex: ex["subj_count"] > lower_bound and ex["subj_count"] <= percentile
         )
+        lower_bound = percentile
+        print(f"percentile_{i}", len(freq_splits[f"percentile_{i}"]))
     return DatasetDict(freq_splits)
 
 
