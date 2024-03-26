@@ -84,7 +84,7 @@ def main(chunk):
 
     print("Loading dataset")
     dataset = load_dataset("DataProvenanceInitiative/flan2021_submix_original")
-    chunksize = int(len(dataset['train']) / 10)
+    chunksize = int(len(dataset['train']) / 100)
     print("Chunksize", chunksize)
     from_chunk = chunk * chunksize
     to_chunk = (chunk+1) * chunksize

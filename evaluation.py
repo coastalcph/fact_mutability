@@ -5,7 +5,7 @@ import os
 import wandb
 
 from utils.data_handling import *
-from evalutation.f1_score import compute_score
+from analysis.f1_score import compute_score
 
 # reds = [
 #     "P937",
@@ -24,7 +24,7 @@ from evalutation.f1_score import compute_score
 # ]
 
 
-def evaluate(data, predictions, target_mode, prediction_mode, aliases):
+def evaluate(data, predictions, target_mode, prediction_mode, aliases, num_aliases=-1):
     # compute F1 as max across any alias for any answer for the most recent, most frequent, or specific-year answer
     qa_targets, qa_predictions = defaultdict(list), defaultdict(list)
     num_empty = 0
@@ -34,6 +34,8 @@ def evaluate(data, predictions, target_mode, prediction_mode, aliases):
         for answer in query['answer']:
             if answer['wikidata_id'] in aliases:
                 answer_aliases = aliases[answer['wikidata_id']]
+                if num_aliases > -1:
+                    answer_aliases = answer_aliases[:num_aliases]
                 target += answer_aliases
             target.append(answer['name'])
         if target is None:
@@ -100,7 +102,7 @@ def main(args):
     predictions = load_predictions(args.predictions_path)
 
     with open(os.path.join(experiment_dir, f"metrics.jsonl"), "w") as fhandle:
-        for rel, df, scores in evaluate(data, predictions, args.target_mode, args.prediction_mode, aliases):
+        for rel, df, scores in evaluate(data, predictions, args.target_mode, args.prediction_mode, aliases, num_aliases=args.num_aliases):
             df.to_json(os.path.join(experiment_dir, f"{rel}_results_per_example.json"))
             wandb.log({k: v for k, v in scores.items() if not isinstance(v, list)})
             print(f"{rel}: ", scores["ave_f1"])
@@ -142,6 +144,12 @@ if __name__ == "__main__":
         type=str,
         default="output",
         help="Dir where model outputs will be stored",
+    )
+    parser.add_argument(
+        "--num_aliases",
+        type=int,
+        default=-1,
+        help="Num aliases to use",
     )
     parser.add_argument("--exp_name", type=str, default="debug", help="Experiment name")
     args = parser.parse_args()

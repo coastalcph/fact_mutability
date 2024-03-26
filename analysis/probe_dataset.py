@@ -9,7 +9,7 @@ def main():
             subjects = json.load(open("./data/wikidata/objects_by_freq/{}.json".format(rel)))
             for s in subjects:
                 num_objects.append(len(s['objects']))
-            print(np.mean(num_objects))
+            print(rel, np.mean(num_objects), np.std(num_objects))
         print()
 
 

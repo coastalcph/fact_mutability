@@ -1,3 +1,8 @@
+from collections import defaultdict
+
+def sort_relations(rels):
+    return sorted(rels, key=lambda x: int(x.split("P")[1]))
+
 relations = {
     "P740": "immutable",
     "P103": "immutable",
@@ -35,3 +40,11 @@ relations = {
     "P210": "mutable",
     "P1037": "mutable",
 }
+
+relations_by_type = defaultdict(list)
+for rel, type in relations.items():
+    relations_by_type[type].append(rel)
+
+sorted_relations_by_type = dict()
+for type, rels in relations_by_type.items():
+    sorted_relations_by_type[type] = sort_relations(rels)

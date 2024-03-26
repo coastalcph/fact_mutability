@@ -3,7 +3,7 @@ import json
 from datasets import load_dataset
 
 
-from scripts.gather_templates import relations
+from dataset import relations
 
 def main():
     queries = defaultdict(list)

@@ -1,16 +1,12 @@
-import os
+import pandas as pd
 from collections import defaultdict
 import json
-
 import numpy as np
 from scipy.stats import pearsonr
 import matplotlib.pyplot as plt
 from python2latex import Document, Table, bold
-
 from mutability.domain import Relation
 from utils.data_handling import *
-
-
 from dataset import relations, sorted_relations_by_type
 
 
@@ -39,7 +35,7 @@ def main():
     rels = [r for rels in sorted_relations_by_type.values() for r in rels]
     stats_by_model = defaultdict(lambda: defaultdict(float))
     template_by_model = defaultdict(lambda: defaultdict(int))
-    models = ["alpaca", "llama"]
+    models = ["llama", "alpaca", "llama2", "llama_chat", "falcon", "falcon_instruct"]
     templates = [0, 1, 2, 3, 4]
     for m in models:
         f1_by_rel = defaultdict(list)
@@ -81,6 +77,8 @@ def main():
     table[0,2:].add_rule()
     #  rule
     table[1,1:].add_rule()
+    for r in range(2,row+2):
+        table[r].highlight_best('high', 'bold')
 
     tex = doc.build(compile_to_pdf=False, show_pdf=False)
     print(tex)
@@ -88,12 +86,21 @@ def main():
 
     all_num_objects = defaultdict(lambda: defaultdict(list))
     all_confidences = defaultdict(lambda: defaultdict(list))
-    models = [("alpaca", "stanford_alpaca"), ("llama", "llama")]
+    models = [
+        ("alpaca", "../fm_predictions/fm_queries_v2/alpaca_fmv2_final_{}---projects-nlp-data-constanzam-stanford_alpaca-huggingface-ckpts-7B/predictions.json"),
+        ("llama", "../fm_predictions/fm_queries_v2/llama_fmv2_final_{}---projects-nlp-data-constanzam-llama-huggingface-ckpts-7B/predictions.json"),
+        ("llama2", "../fm_predictions/fm_queries_v2/llama2_{}--meta-llama-Llama-2-7b-hf/predictions.json"),
+        ("llama_chat", "../fm_predictions/fm_queries_v2/llama2-chat-7b_{}--meta-llama-Llama-2-7b-chat-hf/predictions.json"),
+        ("falcon", "../fm_predictions/fm_queries_v2/falcon-7b_no_instr_{}--tiiuae-falcon-7b/predictions.json"),
+        ("falcon_instruct", "../fm_predictions/fm_queries_v2/falcon-instruct-7b_{}--tiiuae-falcon-7b-instruct/predictions.json"),
+        ("flant5", "../fm_predictions/fm_queries_v2/flant5-xxl_{}--google-flan-t5-xxl/predictions.json"),
+        ]
     for m, k in models:
         for relation, cls in relations.items():
             t = template_by_model[m][relation]
-            predictions = load_predictions(f"../fm_predictions/fm_queries_v2/{m}_fmv2_final_{t}---projects-nlp-data-constanzam-{k}-huggingface-ckpts-7B/predictions.json")  # LAMA
+            predictions = load_predictions(k.format(t))  # LAMA
             subjects = json.load(open("./data/wikidata/objects_by_freq/{}.json".format(relation)))
+            stats = pd.read_json(f"./output/{m}_{t}/{relation}_results_per_example.json")
             for subject in subjects:
                 subj_label = subject['label']
                 subj_id = subject['qid']
@@ -133,8 +140,6 @@ def main():
         plt.ylabel(f"{m} Confidence")
         plt.xlabel("Number of objects")
         plt.show()
-
-    # immutable_dataset = build_dataset('data/lama_with_aliases.json')  # LAMA
 
     immutable_dataset = build_dataset('data/immutable_with_aliases.json')  # Homemade
     predictions_imm = load_predictions(f"data/predictions-imm-{model}.json")  # Homemade

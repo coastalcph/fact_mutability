@@ -14,6 +14,7 @@ def main():
                 frequencies[pid] = count
     all_counts = list(frequencies.values())
     bins = np.percentile(all_counts, np.arange(10, 101, 10))
+    print(bins)
 
     models = [
         "alpaca-7b",
@@ -53,8 +54,7 @@ def main():
             bin_std = [acc[digitized == i].std() for i in range(0, len(bins))]
             bin_counts = [len(acc[digitized == i]) for i in range(0, len(bins))]
             for m, s, c in zip(bin_means, bin_std, bin_counts):
-                print(m)
-                # print(m, s, c)
+                print(m, s, c)
         print()
         print()
 

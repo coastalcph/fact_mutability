@@ -49,9 +49,8 @@ def load_predictions(data_path):
                     non_empty_predictions.append(p)
             data["predictions"] = non_empty_predictions
             if len(predictions) == 0:
-                print(
-                    "Example of data predictions for qcode={}: {}".format(qcode, data)
-                )
+                # print( "Example of data predictions for qcode={}: {}".format(qcode, data))
+                pass
             predictions[qcode] = data
 
     return predictions

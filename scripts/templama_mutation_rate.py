@@ -1,5 +1,5 @@
 from utils.data_handling import *
-from utils.analyze_mutation import build_relations
+from analysis.analyze_inference import build_relations
 
 def main():
     train = build_dataset('data/templama/train_with_aliases.json')
