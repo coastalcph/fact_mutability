@@ -83,7 +83,7 @@ def main(args):
     project_name = "lm_mutability_preds_eval"
     wandb.init(
         project=project_name,
-        name=args.exp_name,
+        name="(eval)" + args.exp_name,
         config=args,
     )
 
