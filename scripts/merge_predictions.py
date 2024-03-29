@@ -1,7 +1,7 @@
 import os
 import json
 
-DIR = "../fm_predictions/"
+DIR = "../fm_predictions/fm_queries_v2"
 
 
 def main():
@@ -36,27 +36,23 @@ def main():
         og_preds = list()
         new_preds = list()
         out = new.replace("update23Oct", "final")
-        with open(
-            os.path.join(DIR, "fm_queries_v2", og, "predictions.json")
-        ) as fhandle:
+        with open(os.path.join(DIR, og, "predictions.json")) as fhandle:
             for line in fhandle:
                 d = json.loads(line)
                 og_preds.append(d)
                 rel = d["qcode"].split("_")[1]
                 if rel not in rels_to_replace:
                     final_preds.append(d)
-        with open(
-            os.path.join(DIR, "fm_queries_v2", new, "predictions.json")
-        ) as fhandle:
+        with open(os.path.join(DIR, new, "predictions.json")) as fhandle:
             for line in fhandle:
                 d = json.loads(line)
                 new_preds.append(d)
                 rel = d["qcode"].split("_")[1]
                 if rel in rels_to_replace:
                     final_preds.append(d)
-        os.makedirs(os.path.join(DIR, "fm_queries_v2", out), exist_ok=True)
+        os.makedirs(os.path.join(DIR, out), exist_ok=True)
         with open(
-            os.path.join(DIR, "fm_queries_v2", out, "predictions.json"),
+            os.path.join(DIR, out, "predictions.json"),
             "w",
         ) as fhandle:
             for d in final_preds:
