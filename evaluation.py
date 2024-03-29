@@ -7,37 +7,21 @@ import wandb
 from utils.data_handling import *
 from analysis.f1_score import compute_score
 
-# reds = [
-#     "P937",
-#     "P108",
-#     "P488",
-#     "P286",
-#     "P6",
-#     "P39",
-#     "P54",
-#     "P264",
-#     "P551",
-#     "P451",
-#     "P1308",
-#     "P210",
-#     "P1037",
-# ]
-
 
 def evaluate(data, predictions, target_mode, prediction_mode, aliases, num_aliases=-1):
     # compute F1 as max across any alias for any answer for the most recent, most frequent, or specific-year answer
     qa_targets, qa_predictions = defaultdict(list), defaultdict(list)
     num_empty = 0
     for query_id, query in data.items():
-        relation = query['relation']
+        relation = query["relation"]
         target = list()
-        for answer in query['answer']:
-            if answer['wikidata_id'] in aliases:
-                answer_aliases = aliases[answer['wikidata_id']]
+        for answer in query["answer"]:
+            if answer["wikidata_id"] in aliases:
+                answer_aliases = aliases[answer["wikidata_id"]]
                 if num_aliases > -1:
                     answer_aliases = answer_aliases[:num_aliases]
                 target += answer_aliases
-            target.append(answer['name'])
+            target.append(answer["name"])
         if target is None:
             continue
         prediction = get_prediction(predictions, query_id, prediction_mode)
@@ -57,13 +41,19 @@ def evaluate(data, predictions, target_mode, prediction_mode, aliases, num_alias
                 "id": query_id,
             }
         )
-        qa_predictions[relation].append({"prediction_text": prediction["answer"], "id": query_id})
-        qa_predictions["all"].append({"prediction_text": prediction["answer"], "id": query_id})
+        qa_predictions[relation].append(
+            {"prediction_text": prediction["answer"], "id": query_id}
+        )
+        qa_predictions["all"].append(
+            {"prediction_text": prediction["answer"], "id": query_id}
+        )
 
     print("Evaluating on {} datapoints".format(len(qa_targets["all"])))
     print("Num empty", num_empty)
     for rel in qa_targets.keys():
-        df, scores = compute_score(predictions=qa_predictions[rel], references=qa_targets[rel])
+        df, scores = compute_score(
+            predictions=qa_predictions[rel], references=qa_targets[rel]
+        )
         yield rel, df, {"n_datapoints": len(qa_targets["all"]), **scores}
 
 
@@ -71,8 +61,8 @@ def load_queries(data_path):
     unique_queries = dict()
     queries = load_dataset(data_path, split="train")
     for query in queries:
-        query_id = "_".join(query['id'].split("_")[:2])
-        if query_id not in unique_queries and len(query['answer']):
+        query_id = "_".join(query["id"].split("_")[:2])
+        if query_id not in unique_queries and len(query["answer"]):
             unique_queries[query_id] = query
     return unique_queries
 
@@ -88,7 +78,7 @@ def load_aliases(data_path):
 def main(args):
     experiment_dir = os.path.join(args.output_dir, args.exp_name)
     if not os.path.exists(experiment_dir):
-        os.mkdir(experiment_dir)
+        os.mkdirs(experiment_dir, exist_ok=True)
 
     project_name = "lm_mutability_preds_eval"
     wandb.init(
@@ -102,11 +92,18 @@ def main(args):
     predictions = load_predictions(args.predictions_path)
 
     with open(os.path.join(experiment_dir, f"metrics.jsonl"), "w") as fhandle:
-        for rel, df, scores in evaluate(data, predictions, args.target_mode, args.prediction_mode, aliases, num_aliases=args.num_aliases):
+        for rel, df, scores in evaluate(
+            data,
+            predictions,
+            args.target_mode,
+            args.prediction_mode,
+            aliases,
+            num_aliases=args.num_aliases,
+        ):
             df.to_json(os.path.join(experiment_dir, f"{rel}_results_per_example.json"))
             wandb.log({k: v for k, v in scores.items() if not isinstance(v, list)})
             print(f"{rel}: ", scores["ave_f1"])
-            data = {rel: scores['ave_f1']}
+            data = {rel: scores["ave_f1"]}
             fhandle.write("{}\n".format(json.dumps(data)))
 
 
