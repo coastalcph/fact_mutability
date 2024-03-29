@@ -78,7 +78,7 @@ def load_aliases(data_path):
 def main(args):
     experiment_dir = os.path.join(args.output_dir, args.exp_name)
     if not os.path.exists(experiment_dir):
-        os.mkdirs(experiment_dir, exist_ok=True)
+        os.makedirs(experiment_dir, exist_ok=True)
 
     project_name = "lm_mutability_preds_eval"
     wandb.init(
