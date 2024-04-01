@@ -8,13 +8,26 @@ from utils.data_handling import *
 from analysis.f1_score import compute_score
 
 
-def evaluate(data, predictions, target_mode, prediction_mode, aliases, num_aliases=-1):
+def evaluate(
+    data,
+    predictions,
+    prediction_mode,
+    aliases,
+    num_aliases=-1,
+    filter_mutable_with_one_ans=False,
+):
     # compute F1 as max across any alias for any answer for the most recent, most frequent, or specific-year answer
     qa_targets, qa_predictions = defaultdict(list), defaultdict(list)
     num_empty = 0
     for query_id, query in data.items():
         relation = query["relation"]
         target = list()
+        if (
+            query["type"] == "mutable"
+            and filter_mutable_with_one_ans
+            and len(query["answer"]) == 1
+        ):
+            continue
         for answer in query["answer"]:
             if answer["wikidata_id"] in aliases:
                 answer_aliases = aliases[answer["wikidata_id"]]
@@ -95,10 +108,10 @@ def main(args):
         for rel, df, scores in evaluate(
             data,
             predictions,
-            args.target_mode,
             args.prediction_mode,
             aliases,
             num_aliases=args.num_aliases,
+            filter_mutable_with_one_ans=args.filter_mutable_with_one_ans,
         ):
             df.to_json(os.path.join(experiment_dir, f"{rel}_results_per_example.json"))
             wandb.log({k: v for k, v in scores.items() if not isinstance(v, list)})
@@ -123,13 +136,6 @@ if __name__ == "__main__":
     )
     parser.add_argument("--predictions_path", type=str, help="Path to predictions")
     parser.add_argument(
-        "--target_mode",
-        type=str,
-        default="most_recent",
-        choices=["most_frequent", "most_recent"],
-        help="Which target we evaluate against",
-    )
-    parser.add_argument(
         "--prediction_mode",
         type=str,
         default="first_token_probability",
@@ -148,6 +154,7 @@ if __name__ == "__main__":
         default=-1,
         help="Num aliases to use",
     )
+    parser.add_argument("--filter_mutable_with_one_ans", action="store_true")
     parser.add_argument("--exp_name", type=str, default="debug", help="Experiment name")
     args = parser.parse_args()
 
