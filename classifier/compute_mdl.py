@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from datasets import load_dataset
 
-RESULTS_DIR = "/projects/nlp/data/constanzam/mdl_mutability/"
+RESULTS_DIR = "/projects/nlp/data/constanzam/mdl_mutability"
 
 
 def get_acc(dir_name, n=10):
@@ -97,17 +97,19 @@ wu_falcon = {"1-1": "0.2", "1-n": "0.0"}
 for clf_type in ["1-1", "1-n"]:
     print(">>>>>>>>>>>>>>>>>>>>>>>>>", clf_type)
     model_to_results_dir = {
-        "llama-7b": "/projects/nlp/data/constanzam/mdl_mutability",
-        "alpaca-7b": f"/projects/nlp/data/constanzam/mdl_mutability/alpaca-7b/fm_dataset_{clf_type}/",
-        "llama2-7b": f"/projects/nlp/data/constanzam/mdl_mutability/llama2-7b/fm_dataset_{clf_type}/",
-        "llama2-chat-7b": f"/projects/nlp/data/constanzam/mdl_mutability/llama2-chat-7b/fm_dataset_{clf_type}/",
-        "falcon-7b": f"/projects/nlp/data/constanzam/mdl_mutability/falcon-7b/fm_dataset_{clf_type}/",
-        "falcon-instruct-7b": f"/projects/nlp/data/constanzam/mdl_mutability/falcon-instruct-7b/fm_dataset_{clf_type}/",
+        "llama-7b": RESULTS_DIR,
+        "alpaca-7b": f"{RESULTS_DIR}/alpaca-7b/fm_dataset_{clf_type}/",
+        "llama2-7b": f"{RESULTS_DIR}llama2-7b/fm_dataset_{clf_type}/",
+        "llama2-chat-7b": f"{RESULTS_DIR}llama2-chat-7b/fm_dataset_{clf_type}/",
+        "falcon-7b": f"{RESULTS_DIR}falcon-7b/fm_dataset_{clf_type}/",
+        "falcon-instruct-7b": f"{RESULTS_DIR}falcon-instruct-7b/fm_dataset_{clf_type}/",
     }
     model_to_normal_subfolder = {
-        "llama-7b": "no_overlap_fix_fm_dataset_1-1"
-        if clf_type == "1-1"
-        else "llama-7B/fm_dataset_1-n/lr5e-5_wu0.2_no_overlap_fix",
+        "llama-7b": (
+            "no_overlap_fix_fm_dataset_1-1"
+            if clf_type == "1-1"
+            else "llama-7B/fm_dataset_1-n/lr5e-5_wu0.2_no_overlap_fix"
+        ),
         "llama2-7b": f"lr5e-5_wu{wu_llama2[clf_type]}_",
         "alpaca-7b": f"lr5e-5_wu{wu_alpaca[clf_type]}_",
         "llama2-chat-7b": "lr5e-5_wu0.2_",
@@ -115,9 +117,11 @@ for clf_type in ["1-1", "1-n"]:
         "falcon-instruct-7b": "lr5e-5_wu0.2_",
     }
     model_to_rand_subfolder = {
-        "llama-7b": f"no_overlap_fix_rand_fm_dataset_{clf_type}"
-        if clf_type == "1-1"
-        else "llama-7B/fm_dataset_1-n/lr5e-5_wu0.2_rand",
+        "llama-7b": (
+            f"no_overlap_fix_rand_fm_dataset_{clf_type}"
+            if clf_type == "1-1"
+            else "llama-7B/fm_dataset_1-n/lr5e-5_wu0.2_rand"
+        ),
         "llama2-7b": f"lr5e-5_wu{wu_llama2[clf_type]}_rand",
         "alpaca-7b": f"lr5e-5_wu{wu_alpaca[clf_type]}_rand",
         "llama2-chat-7b": "lr5e-5_wu0.2_rand",
